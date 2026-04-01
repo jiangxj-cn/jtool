@@ -50,6 +50,8 @@ import { hash, base64, timestampToDateTime, jsonFormat, generateQRCode, urlEncod
 import AsciiTool from './components/ascii/AsciiTool.vue'
 import IPCalculatorTool from './components/ip-calculator/IPCalculatorTool.vue'
 import UnitConverterTool from './components/unit-converter/UnitConverterTool.vue'
+import UUIDGeneratorTool from './components/uuid/UUIDGeneratorTool.vue'
+import RandomGeneratorTool from './components/random/RandomGeneratorTool.vue'
 
 const activeTool = ref('ipcalculator')
 const showMenu = ref(false)
@@ -66,6 +68,8 @@ const menuOptions = [
   { label: '🔗 URL', key: 'url' },
   { label: '📄 文本', key: 'text' },
   { label: '🔢 ASCII', key: 'ascii' },
+  { label: '🔖 UUID', key: 'uuid' },
+  { label: '🎲 随机字符', key: 'random' },
 ]
 
 const toggleMenu = () => {
@@ -95,6 +99,8 @@ const toolComponents: Record<string, any> = {
   url: { template: '<div>URL 工具</div>' },
   text: { template: '<div>文本工具</div>' },
   ascii: AsciiTool,
+  uuid: UUIDGeneratorTool,
+  random: RandomGeneratorTool,
 }
 
 const currentToolComponent = computed(() => toolComponents[activeTool.value])
