@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "dev:web": "pnpm --filter @jtool/web dev",
-    "dev:desktop": "pnpm --filter jtool tauri dev",
+    "dev:desktop": "tauri dev",
     "build": "pnpm -r build",
     "build:web": "pnpm --filter @jtool/web build",
-    "build:desktop": "pnpm --filter jtool tauri build",
+    "build:desktop": "tauri build",
     "test": "pnpm --filter @jtool/core test"
   },
   "devDependencies": {
