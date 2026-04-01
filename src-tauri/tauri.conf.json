@@ -28,7 +28,15 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["msi"],
-    "icon": ["icons/icon.ico", "icons/icon.png"]
+    "targets": ["msi", "nsis", "portable"],
+    "icon": ["icons/icon.ico", "icons/icon.png"],
+    "category": "DeveloperTool",
+    "shortDescription": "JTool - 开发者工具集",
+    "longDescription": "JTool 是一款功能强大的开发者工具集，包含哈希计算、BASE64 编码、ASCII 转换、时间戳转换、JSON 工具等多种实用工具。",
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    }
   }
 }
