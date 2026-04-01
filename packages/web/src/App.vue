@@ -48,12 +48,14 @@ import { ref, computed, h } from 'vue'
 import { darkTheme, NConfigProvider, NMessageProvider, NMenu, NButton } from 'naive-ui'
 import { hash, base64, timestampToDateTime, jsonFormat, generateQRCode, urlEncode, textStats } from '@jtool/core'
 import AsciiTool from './components/ascii/AsciiTool.vue'
+import IPCalculatorTool from './components/ip-calculator/IPCalculatorTool.vue'
 
-const activeTool = ref('hash')
+const activeTool = ref('ipcalculator')
 const showMenu = ref(false)
 const isDark = ref(true)
 
 const menuOptions = [
+  { label: '🌐 IP 计算器', key: 'ipcalculator' },
   { label: '📐 哈希计算', key: 'hash' },
   { label: '🔐 BASE64', key: 'base64' },
   { label: '🕐 时间戳', key: 'timestamp' },
@@ -79,8 +81,9 @@ const handleToolChange = (key: string) => {
   }
 }
 
-// 工具组件（简化版，后续完善）
+// 工具组件
 const toolComponents: Record<string, any> = {
+  ipcalculator: IPCalculatorTool,
   hash: { template: '<div>哈希计算工具</div>' },
   base64: { template: '<div>BASE64 工具</div>' },
   timestamp: { template: '<div>时间戳工具</div>' },
