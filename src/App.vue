@@ -39,6 +39,9 @@ import JsonTool from './components/json/JsonTool.vue'
 import QrcodeTool from './components/qrcode/QrcodeTool.vue'
 import UrlTool from './components/url/UrlTool.vue'
 import TextTool from './components/text/TextTool.vue'
+import BaseConverterTool from './components/base-converter/BaseConverterTool.vue'
+import RegexTool from './components/regex/RegexTool.vue'
+import JWTTool from './components/jwt/JWTTool.vue'
 
 const activeTool = ref('hash')
 
@@ -50,6 +53,9 @@ const menuOptions = [
   { label: '📱 二维码', key: 'qrcode' },
   { label: '🔗 URL 编码', key: 'url' },
   { label: '📄 文本处理', key: 'text' },
+  { label: '🔢 进制转换', key: 'baseConverter' },
+  { label: '🔍 正则测试', key: 'regex' },
+  { label: '🔑 JWT 解码', key: 'jwt' },
 ]
 
 const toolComponents: Record<string, any> = {
@@ -60,6 +66,9 @@ const toolComponents: Record<string, any> = {
   qrcode: QrcodeTool,
   url: UrlTool,
   text: TextTool,
+  baseConverter: BaseConverterTool,
+  regex: RegexTool,
+  jwt: JWTTool,
 }
 
 const currentToolComponent = computed(() => toolComponents[activeTool.value])
