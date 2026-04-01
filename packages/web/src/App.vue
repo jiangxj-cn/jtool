@@ -47,6 +47,7 @@
 import { ref, computed, h } from 'vue'
 import { darkTheme, NConfigProvider, NMessageProvider, NMenu, NButton } from 'naive-ui'
 import { hash, base64, timestampToDateTime, jsonFormat, generateQRCode, urlEncode, textStats } from '@jtool/core'
+import AsciiTool from './components/ascii/AsciiTool.vue'
 
 const activeTool = ref('hash')
 const showMenu = ref(false)
@@ -60,6 +61,7 @@ const menuOptions = [
   { label: '📱 二维码', key: 'qrcode' },
   { label: '🔗 URL', key: 'url' },
   { label: '📄 文本', key: 'text' },
+  { label: '🔢 ASCII', key: 'ascii' },
 ]
 
 const toggleMenu = () => {
@@ -86,6 +88,7 @@ const toolComponents: Record<string, any> = {
   qrcode: { template: '<div>二维码工具</div>' },
   url: { template: '<div>URL 工具</div>' },
   text: { template: '<div>文本工具</div>' },
+  ascii: AsciiTool,
 }
 
 const currentToolComponent = computed(() => toolComponents[activeTool.value])
