@@ -12,3 +12,5 @@ export * from './base-converter';
 export * from './regex';
 export * from './jwt';
 export * from './var-name';
+export * from './ip-calculator';
+export * from './unit-converter';

@@ -49,12 +49,14 @@ import { darkTheme, NConfigProvider, NMessageProvider, NMenu, NButton } from 'na
 import { hash, base64, timestampToDateTime, jsonFormat, generateQRCode, urlEncode, textStats } from '@jtool/core'
 import AsciiTool from './components/ascii/AsciiTool.vue'
 import IPCalculatorTool from './components/ip-calculator/IPCalculatorTool.vue'
+import UnitConverterTool from './components/unit-converter/UnitConverterTool.vue'
 
 const activeTool = ref('ipcalculator')
 const showMenu = ref(false)
 const isDark = ref(true)
 
 const menuOptions = [
+  { label: '🔄 单位换算', key: 'unitconverter' },
   { label: '🌐 IP 计算器', key: 'ipcalculator' },
   { label: '📐 哈希计算', key: 'hash' },
   { label: '🔐 BASE64', key: 'base64' },
@@ -83,6 +85,7 @@ const handleToolChange = (key: string) => {
 
 // 工具组件
 const toolComponents: Record<string, any> = {
+  unitconverter: UnitConverterTool,
   ipcalculator: IPCalculatorTool,
   hash: { template: '<div>哈希计算工具</div>' },
   base64: { template: '<div>BASE64 工具</div>' },
