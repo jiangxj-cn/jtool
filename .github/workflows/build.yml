@@ -1,0 +1,15 @@
+# .github/workflows/build.yml
+name: Build Windows App
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm install
+      - run: npm run tauri build
+      - upload: 自动生成 Release 和安装包
