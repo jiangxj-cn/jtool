@@ -1,39 +1,37 @@
 <template>
   <n-config-provider :theme="darkTheme">
     <n-message-provider>
-      <n-app>
-        <div class="app-container">
-          <!-- 侧边栏 -->
-          <aside class="sidebar">
-            <div class="logo">
-              <h1>JTool</h1>
-              <span class="version">v0.1.0</span>
-            </div>
-            
-            <n-menu
-              v-model:value="activeTool"
-              :options="menuOptions"
-              @update:value="handleToolChange"
-            />
-            
-            <div class="sidebar-footer">
-              <n-button quaternary icon="⚙️">设置</n-button>
-            </div>
-          </aside>
+      <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+          <div class="logo">
+            <h1>JTool</h1>
+            <span class="version">v0.1.0</span>
+          </div>
           
-          <!-- 主内容区 -->
-          <main class="main-content">
-            <component :is="currentToolComponent" />
-          </main>
-        </div>
-      </n-app>
+          <n-menu
+            v-model:value="activeTool"
+            :options="menuOptions"
+            @update:value="handleToolChange"
+          />
+          
+          <div class="sidebar-footer">
+            <n-button quaternary icon="⚙️">设置</n-button>
+          </div>
+        </aside>
+        
+        <!-- 主内容区 -->
+        <main class="main-content">
+          <component :is="currentToolComponent" />
+        </main>
+      </div>
     </n-message-provider>
   </n-config-provider>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { darkTheme, NConfigProvider, NMessageProvider, NApp, NMenu, NButton } from 'naive-ui'
+import { darkTheme, NConfigProvider, NMessageProvider, NMenu, NButton } from 'naive-ui'
 import HashTool from './components/hash/HashTool.vue'
 import Base64Tool from './components/base64/Base64Tool.vue'
 import TimestampTool from './components/timestamp/TimestampTool.vue'
