@@ -67,6 +67,7 @@ import TextTool from './components/text/TextTool.vue'
 import BaseConverterTool from './components/base-converter/BaseConverterTool.vue'
 import RegexTool from './components/regex/RegexTool.vue'
 import JWTTool from './components/jwt/JWTTool.vue'
+import AsciiTool from './components/ascii/AsciiTool.vue'
 
 const activeTool = ref('hash')
 const isMaximized = ref(false)
@@ -105,6 +106,7 @@ const toggleSidebar = () => {
 const menuOptions = [
   { label: '📐 哈希计算', key: 'hash' },
   { label: '🔐 BASE64', key: 'base64' },
+  { label: '🔤 ASCII 转换', key: 'ascii' },
   { label: '🕐 时间戳转换', key: 'timestamp' },
   { label: '📝 JSON 工具', key: 'json' },
   { label: '📱 二维码', key: 'qrcode' },
@@ -118,6 +120,7 @@ const menuOptions = [
 const toolComponents: Record<string, any> = {
   hash: HashTool,
   base64: Base64Tool,
+  ascii: AsciiTool,
   timestamp: TimestampTool,
   json: JsonTool,
   qrcode: QrcodeTool,
