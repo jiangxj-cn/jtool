@@ -12,6 +12,7 @@
     "test": "pnpm --filter @jtool/core test"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.10.1",
     "typescript": "^5.3.0"
   }
 }
