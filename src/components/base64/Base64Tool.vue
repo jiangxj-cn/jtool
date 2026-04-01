@@ -52,7 +52,9 @@ const decode = () => {
 </script>
 
 <style scoped>
-.tool-container { max-width: 900px; }
+.tool-container { max-width: 100%; margin: 0 auto; }
+@media (min-width: 1200px) { .tool-container { max-width: 1200px; } }
+@media (min-width: 1600px) { .tool-container { max-width: 1600px; } }
 h2 { font-size: 24px; margin-bottom: 8px; }
 .tool-description { color: var(--text-secondary); margin-bottom: 20px; }
 .tool-card { background: var(--bg-secondary); border: 1px solid var(--border); }
