@@ -1,5 +1,5 @@
 /**
- * JSON 工具
+ * JSON 工具 - 主导出文件
  */
 import JSON5 from 'json5'
 
@@ -9,119 +9,49 @@ export interface JsonResult {
   error?: string
 }
 
-/**
- * JSON 格式化
- */
-export function jsonFormat(input: string, space: number = 2): JsonResult {
-  try {
-    const obj = JSON5.parse(input)
-    return {
-      success: true,
-      result: JSON.stringify(obj, null, space),
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : '无效的 JSON',
-    }
-  }
-}
+// 导出所有功能模块（使用显式导出避免命名冲突）
+export {
+  jsonFormat,
+  jsonValidate,
+  jsonMinify,
+} from './format'
 
-/**
- * JSON 校验
- */
-export function jsonValidate(input: string): { valid: boolean; error?: string } {
-  try {
-    JSON5.parse(input)
-    return { valid: true }
-  } catch (error) {
-    return {
-      valid: false,
-      error: error instanceof Error ? error.message : '无效的 JSON',
-    }
-  }
-}
+export {
+  jsonEscape,
+  jsonUnescape,
+  jsonEscapeObject,
+  jsonUnescapeObject,
+  jsonEscapeAll,
+  jsonUnescapeAll,
+} from './escape'
 
-/**
- * JSON 压缩
- */
-export function jsonMinify(input: string): JsonResult {
-  try {
-    const obj = JSON5.parse(input)
-    return {
-      success: true,
-      result: JSON.stringify(obj),
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : '无效的 JSON',
-    }
-  }
-}
+export {
+  jsonPathQuery,
+  getJsonPathExamples,
+  type JSONPathResult,
+} from './jsonpath'
 
-/**
- * JSON 转义（字符串转 JSON 字符串）
- */
-export function jsonEscape(input: string): string {
-  return JSON.stringify(input)
-}
+export {
+  jsonToYaml,
+  yamlToJson,
+  jsonToXml,
+  xmlToJson,
+  jsonToCsv,
+  csvToJson,
+  jsonToJsObject,
+  type ConvertResult,
+} from './convert'
 
-/**
- * JSON 去除转义（JSON 字符串转普通字符串）
- */
-export function jsonUnescape(input: string): string {
-  try {
-    return JSON.parse(input)
-  } catch {
-    return input
-  }
-}
+export {
+  jsonDiffCompare,
+  getDiffStats,
+  type DiffResult,
+} from './diff'
 
-/**
- * JSON 对象转义（添加转义符）
- */
-export function jsonEscapeObject(input: string): string {
-  try {
-    const obj = JSON5.parse(input)
-    return JSON.stringify(obj)
-  } catch (error) {
-    throw new Error('无效的 JSON 输入')
-  }
-}
-
-/**
- * JSON 对象去除转义（移除转义符）
- */
-export function jsonUnescapeObject(input: string): string {
-  try {
-    const obj = JSON.parse(input)
-    return JSON5.stringify(obj, null, 2)
-  } catch (error) {
-    throw new Error('无效的 JSON 输入')
-  }
-}
-
-/**
- * JSON 转义所有特殊字符
- */
-export function jsonEscapeAll(input: string): string {
-  return input
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t')
-}
-
-/**
- * JSON 去除所有转义
- */
-export function jsonUnescapeAll(input: string): string {
-  return input
-    .replace(/\\"/g, '"')
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\\\/g, '\\')
-}
+export {
+  jsonEscapeForLanguage,
+  unescapeFromLanguage,
+  getSupportedLanguages,
+  type EscapeLanguage,
+  type EscapeResult,
+} from './escape-enhanced'
