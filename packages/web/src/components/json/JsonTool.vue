@@ -716,6 +716,7 @@ const initMonacoEditor = () => {
         lineNumbers: 'on',
         wordWrap: 'on',
         scrollBeyondLastLine: false,
+        height: 350,
       })
       
       inputEditorInstance.onDidChangeModelContent(() => {
@@ -737,6 +738,7 @@ const initMonacoEditor = () => {
         wordWrap: 'on',
         readOnly: true,
         scrollBeyondLastLine: false,
+        height: 350,
       })
     }
   }
@@ -1148,8 +1150,9 @@ onUnmounted(() => {
 
 /* 编辑器包装器 */
 .editor-wrapper {
-  flex: 1;
-  min-height: 300px;
+  flex: none;
+  height: 350px;
+  min-height: 350px;
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
@@ -1157,7 +1160,8 @@ onUnmounted(() => {
 
 .monaco-editor {
   width: 100%;
-  height: 300px;
+  height: 100%;
+  min-height: 350px;
 }
 
 .fallback-textarea {
@@ -1345,8 +1349,15 @@ small {
 }
 
 .full-panel .editor-wrapper {
-  min-height: 250px;
+  height: 350px;
+  min-height: 350px;
   padding: 12px;
+  flex: none !important;
+}
+
+.full-panel .monaco-editor {
+  height: 100% !important;
+  min-height: 350px !important;
 }
 
 /* 操作按钮栏 */
