@@ -1,52 +1,36 @@
 <template>
   <div class="tool-container">
-    <!-- 顶部标题区 -->
-    <div class="tool-header">
-      <div class="header-left">
-        <h2>📝 JSON 工具</h2>
-        <p class="tool-description">专业的 JSON 格式化、校验、转换工具</p>
-      </div>
-      <div class="header-right">
-        <n-space>
-          <n-tag :type="isValidJson ? 'success' : 'default'" size="medium" bordered>
-            <template #icon>
-              <n-icon :component="isValidJson ? CheckmarkCircleOutline : CloseCircleOutline" />
-            </template>
-            {{ isValidJson ? 'JSON 有效' : (inputJson ? 'JSON 无效' : '等待输入') }}
-          </n-tag>
-        </n-space>
-      </div>
+    <!-- 紧凑头部 -->
+    <div class="tool-header-compact">
+      <h2>📝 JSON 工具</h2>
+      <n-tag :type="isValidJson ? 'success' : 'default'" size="small" bordered>
+        {{ isValidJson ? '有效' : (inputJson ? '无效' : '') }}
+      </n-tag>
     </div>
     
-    <n-card class="tool-card" size="large">
-      <!-- 顶部快捷操作栏 -->
-      <div class="quick-actions">
+    <n-card class="tool-card">
+      <!-- 紧凑按钮栏 -->
+      <div class="quick-actions-compact">
         <n-space align="center" justify="space-between">
           <n-space>
-            <n-button type="primary" @click="format" :disabled="!inputJson" size="large">
-              <template #icon><n-icon :component="FormatSize" /></template>
+            <n-button type="primary" @click="format" :disabled="!inputJson" size="medium">
               格式化
             </n-button>
-            <n-button @click="validate" :disabled="!inputJson" size="large">
-              <template #icon><n-icon :component="CheckmarkCircleOutline" /></template>
+            <n-button @click="validate" :disabled="!inputJson" size="medium">
               校验
             </n-button>
-            <n-button @click="compress" :disabled="!inputJson" size="large">
-              <template #icon><n-icon :component="FlashOutline" /></template>
+            <n-button @click="compress" :disabled="!inputJson" size="medium">
               压缩
+            </n-button>
+            <n-button @click="pasteFromClipboard" size="medium">
+              粘贴
             </n-button>
           </n-space>
           <n-space>
-            <n-button @click="pasteFromClipboard" size="large">
-              <template #icon><n-icon :component="ClipboardOutline" /></template>
-              粘贴
+            <n-button @click="copyOutput" :disabled="!outputJson" size="medium">
+              复制
             </n-button>
-            <n-button @click="copyOutput" :disabled="!outputJson" size="large">
-              <template #icon><n-icon :component="CopyOutline" /></template>
-              复制结果
-            </n-button>
-            <n-button @click="clearAll" size="large">
-              <template #icon><n-icon :component="TrashOutline" /></template>
+            <n-button @click="clearAll" size="medium">
               清空
             </n-button>
           </n-space>
@@ -1184,7 +1168,7 @@ onUnmounted(() => {
 
 .fallback-textarea :deep(.n-input__textarea) {
   height: 100%;
-  min-height: 150px;
+  min-height: 400px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
@@ -1285,54 +1269,47 @@ small {
   padding: 12px;
 }
 
-/* ===== 界面优化 - 更明亮更现代 ===== */
+/* ===== 界面优化 - 重点突出输入框 ===== */
 
 /* 工具容器 */
 .tool-container {
   max-width: 100%;
   margin: 0 auto;
-  padding: 20px;
+  padding: 12px;
 }
 
-/* 头部优化 */
-.tool-header {
+/* 紧凑头部 */
+.tool-header-compact {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 20px;
-  background: linear-gradient(135deg, rgba(67, 160, 96, 0.1) 0%, rgba(67, 160, 96, 0.05) 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(67, 160, 96, 0.2);
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
 }
 
-.header-left h2 {
-  font-size: 28px;
-  margin: 0 0 8px 0;
+.tool-header-compact h2 {
+  font-size: 18px;
+  margin: 0;
   color: var(--text-primary);
   font-weight: 600;
-}
-
-.tool-description {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
 }
 
 /* 卡片优化 */
 .tool-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 12px;
 }
 
-/* 快捷操作栏 */
-.quick-actions {
-  padding: 20px;
-  margin-bottom: 20px;
+/* 紧凑按钮栏 */
+.quick-actions-compact {
+  padding: 10px;
+  margin-bottom: 12px;
   background: var(--bg-tertiary);
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--border);
 }
 
@@ -1360,9 +1337,9 @@ small {
 }
 
 .full-panel .editor-wrapper {
-  height: 150px;
-  min-height: 150px;
-  padding: 12px;
+  height: 400px;
+  min-height: 400px;
+  padding: 8px;
   flex: none !important;
 }
 
