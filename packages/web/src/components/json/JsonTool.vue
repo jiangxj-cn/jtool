@@ -1154,8 +1154,8 @@ onUnmounted(() => {
 /* 编辑器包装器 */
 .editor-wrapper {
   flex: none;
-  height: 200px;
-  min-height: 200px;
+  height: 150px;
+  min-height: 150px;
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
@@ -1184,7 +1184,7 @@ onUnmounted(() => {
 
 .fallback-textarea :deep(.n-input__textarea) {
   height: 100%;
-  min-height: 200px;
+  min-height: 150px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
@@ -1360,8 +1360,8 @@ small {
 }
 
 .full-panel .editor-wrapper {
-  height: 200px;
-  min-height: 200px;
+  height: 150px;
+  min-height: 150px;
   padding: 12px;
   flex: none !important;
 }
