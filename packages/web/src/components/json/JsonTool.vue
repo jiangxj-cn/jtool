@@ -1328,6 +1328,36 @@ small {
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 输出面板特殊样式 */
+.output-panel {
+  margin-top: 12px;
+}
+
+.output-panel .editor-wrapper {
+  height: 250px !important;
+  min-height: 250px !important;
+}
+
+.output-panel .fallback-textarea {
+  height: 250px !important;
+  min-height: 250px !important;
+  display: block !important;
+}
+
+.output-panel .n-input {
+  height: 250px !important;
+  min-height: 250px !important;
+}
+
+.output-panel .n-input__textarea {
+  height: 250px !important;
+  min-height: 250px !important;
+  font-size: 14px;
+  font-family: 'Monaco', 'Menlo', monospace;
 }
 
 .full-panel .panel-header {
