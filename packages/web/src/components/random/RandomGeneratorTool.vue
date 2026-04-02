@@ -184,7 +184,8 @@ import {
   useMessage
 } from 'naive-ui'
 import {
-  generateRandom, batchGenerate,
+  generateRandomString, generateRandomPassword, generateRandomNumber,
+  batchGenerateRandomString, batchGenerateRandomPassword, batchGenerateRandomNumber,
   type CharacterSet, type PasswordOptions
 } from '@jtool/core'
 
@@ -242,30 +243,38 @@ const generate = () => {
   const startTime = Date.now()
 
   try {
+    let value: string
+    
     if (enableBatch.value) {
       // 批量生成
-      const batchResult = batchGenerate(generatorType.value, batchCount.value, {
-        length: length.value,
-        charSet: charSet.value,
-        passwordOptions: passwordOptions.value,
-        includeLeadingZero: includeLeadingZero.value,
-      })
-      results.value = batchResult.results.map(r => ({
-        value: r.value,
-        type: r.type,
-      }))
+      const batchResults: string[] = []
+      for (let i = 0; i < batchCount.value; i++) {
+        if (generatorType.value === 'string') {
+          value = generateRandomString(length.value, charSet.value)
+        } else if (generatorType.value === 'password') {
+          value = generateRandomPassword({
+            length: length.value,
+            ...passwordOptions.value,
+          })
+        } else {
+          value = generateRandomNumber(length.value, includeLeadingZero.value)
+        }
+        batchResults.push(value)
+      }
+      results.value = batchResults.map(v => ({ value: v, type: generatorType.value }))
     } else {
       // 单个生成
-      const result = generateRandom(generatorType.value, {
-        length: length.value,
-        charSet: charSet.value,
-        passwordOptions: passwordOptions.value,
-        includeLeadingZero: includeLeadingZero.value,
-      })
-      results.value = [{
-        value: result.value,
-        type: result.type,
-      }]
+      if (generatorType.value === 'string') {
+        value = generateRandomString(length.value, charSet.value)
+      } else if (generatorType.value === 'password') {
+        value = generateRandomPassword({
+          length: length.value,
+          ...passwordOptions.value,
+        })
+      } else {
+        value = generateRandomNumber(length.value, includeLeadingZero.value)
+      }
+      results.value = [{ value, type: generatorType.value }]
     }
 
     generationTime.value = Date.now() - startTime
