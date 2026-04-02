@@ -76,7 +76,7 @@
                 style="width: 150px"
                 placeholder="源格式"
               />
-              <n-arrow :direction="right" />
+              <span style="font-size: 20px">→</span>
               <n-select
                 v-model:value="convertTargetFormat"
                 :options="targetFormatOptions"
@@ -174,7 +174,7 @@ import { ref, computed } from 'vue'
 import JSON5 from 'json5'
 import {
   NCard, NInput, NButton, NSpace, NAlert, NTabs, NTabPane, NDivider,
-  NTag, NSelect, NCollapseTransition, NCode, NArrow
+  NTag, NSelect, NCollapseTransition, NCode
 } from 'naive-ui'
 import {
   jsonFormat, jsonValidate, jsonMinify,
@@ -182,7 +182,7 @@ import {
   jsonPathQuery, getJsonPathExamples,
   jsonToYaml, yamlToJson, jsonToXml, xmlToJson, jsonToCsv, csvToJson, jsonToJsObject,
   jsonDiffCompare,
-  jsonEscapeForLanguage, unescapeFromLanguage, getSupportedLanguages
+  jsonEscapeForLanguage, unescapeFromLanguage as unescapeFromLanguageCore, getSupportedLanguages
 } from '@jtool/core'
 
 const activeTab = ref('basic')
@@ -363,9 +363,9 @@ const escapeForLanguage = () => {
   }
 }
 
-const unescapeFromLanguageFunc = () => {
+const unescapeFromLanguage = () => {
   clearError()
-  const result = unescapeFromLanguage(inputJson.value, escapeLanguage.value)
+  const result = unescapeFromLanguageCore(inputJson.value, escapeLanguage.value)
   if (result.success) {
     outputJson.value = result.result || ''
     resultInfo.value = { success: true }
