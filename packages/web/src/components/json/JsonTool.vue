@@ -1,37 +1,51 @@
 <template>
   <div class="tool-container">
+    <!-- 顶部标题区 -->
     <div class="tool-header">
-      <h2>📝 JSON 工具</h2>
-      <p class="tool-description">格式化、校验、压缩、转义、JSONPath 查询、格式转换、差异比较等</p>
+      <div class="header-left">
+        <h2>📝 JSON 工具</h2>
+        <p class="tool-description">专业的 JSON 格式化、校验、转换工具</p>
+      </div>
+      <div class="header-right">
+        <n-space>
+          <n-tag :type="isValidJson ? 'success' : 'default'" size="medium" bordered>
+            <template #icon>
+              <n-icon :component="isValidJson ? CheckmarkCircleOutline : CloseCircleOutline" />
+            </template>
+            {{ isValidJson ? 'JSON 有效' : (inputJson ? 'JSON 无效' : '等待输入') }}
+          </n-tag>
+        </n-space>
+      </div>
     </div>
     
-    <n-card class="tool-card">
-      <!-- 工具栏 -->
-      <div class="toolbar">
-        <n-space align="center">
-          <n-tag type="info" size="small">
-            <template #icon><n-icon :component="DocumentTextOutline" /></template>
-            {{ activeTabLabel }}
-          </n-tag>
-          <n-tag v-if="isValidJson" type="success" size="small">
-            <template #icon><n-icon :component="CheckmarkCircleOutline" /></template>
-            JSON 有效
-          </n-tag>
-          <n-tag v-else-if="inputJson" type="error" size="small">
-            <template #icon><n-icon :component="CloseCircleOutline" /></template>
-            JSON 无效
-          </n-tag>
-          <n-space style="margin-left: auto">
-            <n-button size="small" @click="format" :disabled="!inputJson">
+    <n-card class="tool-card" size="large">
+      <!-- 顶部快捷操作栏 -->
+      <div class="quick-actions">
+        <n-space align="center" justify="space-between">
+          <n-space>
+            <n-button type="primary" @click="format" :disabled="!inputJson" size="large">
               <template #icon><n-icon :component="FormatSize" /></template>
               格式化
-              <template #shortcut>Ctrl+S</template>
             </n-button>
-            <n-button size="small" @click="copyOutput" :disabled="!outputJson">
+            <n-button @click="validate" :disabled="!inputJson" size="large">
+              <template #icon><n-icon :component="CheckmarkCircleOutline" /></template>
+              校验
+            </n-button>
+            <n-button @click="compress" :disabled="!inputJson" size="large">
+              <template #icon><n-icon :component="FlashOutline" /></template>
+              压缩
+            </n-button>
+          </n-space>
+          <n-space>
+            <n-button @click="pasteFromClipboard" size="large">
+              <template #icon><n-icon :component="ClipboardOutline" /></template>
+              粘贴
+            </n-button>
+            <n-button @click="copyOutput" :disabled="!outputJson" size="large">
               <template #icon><n-icon :component="CopyOutline" /></template>
-              复制
+              复制结果
             </n-button>
-            <n-button size="small" @click="clearAll">
+            <n-button @click="clearAll" size="large">
               <template #icon><n-icon :component="TrashOutline" /></template>
               清空
             </n-button>
@@ -1254,6 +1268,149 @@ small {
 
 :deep(.n-list-item) {
   padding: 12px;
+}
+
+/* ===== 界面优化 - 更明亮更现代 ===== */
+
+/* 工具容器 */
+.tool-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* 头部优化 */
+.tool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(67, 160, 96, 0.1) 0%, rgba(67, 160, 96, 0.05) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(67, 160, 96, 0.2);
+}
+
+.header-left h2 {
+  font-size: 28px;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.tool-description {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* 卡片优化 */
+.tool-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 快捷操作栏 */
+.quick-actions {
+  padding: 20px;
+  margin-bottom: 20px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* 分栏布局优化 */
+.split-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* 面板优化 */
+.input-panel,
+.output-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(67, 160, 96, 0.15) 0%, rgba(67, 160, 96, 0.08) 100%);
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.editor-wrapper {
+  flex: 1;
+  min-height: 400px;
+  padding: 12px;
+  background: var(--bg-primary);
+}
+
+.monaco-editor {
+  width: 100%;
+  height: 400px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .split-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .tool-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .header-right {
+    width: 100%;
+  }
+}
+
+/* Tab 优化 */
+:deep(.n-tabs-tab) {
+  font-weight: 500;
+  padding: 12px 20px !important;
+}
+
+:deep(.n-tabs-tab--active) {
+  font-weight: 600;
+}
+
+/* 按钮悬停效果 */
+.n-button {
+  transition: all 0.2s ease;
+}
+
+.n-button:hover {
+  transform: translateY(-1px);
+}
+
+.n-button:active {
+  transform: translateY(0);
 }
 
 /* 标签图标 */
