@@ -30,7 +30,12 @@ jobs:
           targets: x86_64-pc-windows-msvc
 
       - name: Install dependencies
-        run: pnpm install
+        run: |
+          echo "Node version: $(node --version)"
+          echo "pnpm version: $(pnpm --version)"
+          echo "Working directory: $(pwd)"
+          echo "pnpm-store-dir: $(pnpm store path)"
+          pnpm install --no-frozen-lockfile 2>&1
 
       - name: Build frontend
         run: pnpm build:web
