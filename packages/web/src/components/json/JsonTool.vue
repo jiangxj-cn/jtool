@@ -56,9 +56,9 @@
       <n-tabs type="line" animated v-model:value="activeTab" @update:value="onTabChange">
         <!-- 基础功能 -->
         <n-tab-pane name="basic" tab="基础功能">
-          <div class="split-layout">
+          <div class="vertical-layout">
             <!-- 左侧输入 -->
-            <div class="input-panel">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="CreateOutline" /> 输入
@@ -101,7 +101,7 @@
             </div>
 
             <!-- 右侧输出 -->
-            <div class="output-panel">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="DocumentTextOutline" /> 输出
@@ -139,8 +139,8 @@
 
         <!-- 转义工具 -->
         <n-tab-pane name="escape" tab="转义工具">
-          <div class="split-layout">
-            <div class="input-panel">
+          <div class="vertical-layout">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="ShieldCheckmarkOutline" /> 转义输入
@@ -179,7 +179,7 @@
               </div>
             </div>
 
-            <div class="output-panel">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="DocumentTextOutline" /> 转义结果
@@ -212,8 +212,8 @@
 
         <!-- JSONPath 查询 -->
         <n-tab-pane name="jsonpath" tab="JSONPath 查询">
-          <div class="split-layout">
-            <div class="input-panel">
+          <div class="vertical-layout">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="SearchOutline" /> JSON 输入
@@ -254,7 +254,7 @@
               </div>
             </div>
 
-            <div class="output-panel">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="DocumentTextOutline" /> 查询结果
@@ -299,8 +299,8 @@
 
         <!-- 格式转换 -->
         <n-tab-pane name="convert" tab="格式转换">
-          <div class="split-layout">
-            <div class="input-panel">
+          <div class="vertical-layout">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="SwapHorizontalOutline" /> 输入
@@ -342,7 +342,7 @@
               </div>
             </div>
 
-            <div class="output-panel">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="DocumentTextOutline" /> 转换结果
@@ -375,8 +375,8 @@
 
         <!-- 多语言转义 -->
         <n-tab-pane name="language" tab="多语言转义">
-          <div class="split-layout">
-            <div class="input-panel">
+          <div class="vertical-layout">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="CodeSlashOutline" /> 输入
@@ -414,7 +414,7 @@
               </div>
             </div>
 
-            <div class="output-panel">
+            <div class="full-panel">
               <div class="panel-header">
                 <span class="panel-title">
                   <n-icon :component="DocumentTextOutline" /> 结果
@@ -1100,7 +1100,7 @@ onUnmounted(() => {
 }
 
 /* 分栏布局 */
-.split-layout {
+.vertical-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -1108,13 +1108,13 @@ onUnmounted(() => {
 }
 
 @media (max-width: 900px) {
-  .split-layout {
+  .vertical-layout {
     grid-template-columns: 1fr;
   }
 }
 
 /* 面板样式 */
-.input-panel, .output-panel {
+.full-panel, .full-panel {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1321,17 +1321,45 @@ small {
   border: 1px solid var(--border);
 }
 
-/* 分栏布局优化 */
-.split-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* 垂直布局优化 - 输入框占满整行 */
+.vertical-layout {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   margin-top: 20px;
 }
 
+/* 全宽面板 */
+.full-panel {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.full-panel .panel-header {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(67, 160, 96, 0.15) 0%, rgba(67, 160, 96, 0.08) 100%);
+  border-bottom: 1px solid var(--border);
+}
+
+.full-panel .editor-wrapper {
+  min-height: 250px;
+  padding: 12px;
+}
+
+/* 操作按钮栏 */
+.action-bar {
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
 /* 面板优化 */
-.input-panel,
-.output-panel {
+.full-panel,
+.full-panel {
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
@@ -1374,7 +1402,7 @@ small {
 
 /* 响应式 */
 @media (max-width: 1200px) {
-  .split-layout {
+  .vertical-layout {
     grid-template-columns: 1fr;
     gap: 16px;
   }
