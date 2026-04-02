@@ -71,16 +71,16 @@
                 </n-space>
               </div>
               <div class="editor-wrapper">
-                <div class="monaco-editor" ref="inputEditorRef"></div>
                 <div v-if="!useMonaco" class="fallback-textarea">
                   <n-input
                     v-model:value="inputJson"
                     type="textarea"
-                    placeholder="输入 JSON..."
-                    :rows="15"
+                    placeholder="请在此输入或粘贴 JSON 内容..."
+                    :rows="12"
                     @input="onInputChanged"
                   />
                 </div>
+                <div class="monaco-editor" ref="inputEditorRef"></div>
               </div>
               <div class="panel-footer">
                 <n-space>
@@ -700,9 +700,12 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 // 初始化 Monaco Editor
 const initMonacoEditor = () => {
-  // 检查 Monaco 是否可用
-  if (typeof (window as any).monaco !== 'undefined') {
-    useMonaco.value = true
+  // 暂时禁用 Monaco，使用原生 textarea
+  // if (typeof (window as any).monaco !== 'undefined') {
+  //   useMonaco.value = true
+  return
+  
+  if (false) {
     
     // 初始化输入编辑器
     if (inputEditorRef.value) {
@@ -1167,17 +1170,25 @@ onUnmounted(() => {
 .fallback-textarea {
   width: 100%;
   height: 100%;
+  display: block;
 }
 
 .fallback-textarea :deep(.n-input) {
+  height: 100%;
+  display: block;
+}
+
+.fallback-textarea :deep(.n-input-wrapper) {
   height: 100%;
 }
 
 .fallback-textarea :deep(.n-input__textarea) {
   height: 100%;
+  min-height: 350px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.5;
+  resize: none;
 }
 
 /* 示例卡片 */
