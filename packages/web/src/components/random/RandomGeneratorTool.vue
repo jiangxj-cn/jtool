@@ -278,8 +278,11 @@ const generate = () => {
     }
 
     generationTime.value = Date.now() - startTime
-    message.success('生成成功')
+    console.log('[RandomGenerator] 生成成功，结果数:', results.value.length)
+    console.log('[RandomGenerator] 第一个结果:', results.value[0]?.value)
+    message.success(`生成成功，${results.value.length} 个结果`)
   } catch (error) {
+    console.error('[RandomGenerator] 生成失败:', error)
     message.error(error instanceof Error ? error.message : '生成失败')
     results.value = []
   } finally {
