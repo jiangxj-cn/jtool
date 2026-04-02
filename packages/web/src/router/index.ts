@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
 import ToolSkeleton from '../components/common/ToolSkeleton.vue'
 
 // 懒加载工具组件，添加 meta.loading 信息
@@ -126,7 +126,7 @@ const routes: RouteRecordRaw[] = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),  // 桌面应用必须使用 Hash 模式
   routes,
 })
 

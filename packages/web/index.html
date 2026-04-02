@@ -6,6 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JTool - 开发者工具集</title>
     <meta name="description" content="在线开发者工具集 - 哈希计算、BASE64、时间戳转换、JSON 格式化、二维码生成等" />
+    
+    <!-- Monaco Editor CDN (可选，用于代码高亮) -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.min.js"></script>
+    <script>
+      // 配置 Monaco 加载路径
+      if (window.require) {
+        window.require.config({
+          paths: {
+            vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs'
+          }
+        })
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>
