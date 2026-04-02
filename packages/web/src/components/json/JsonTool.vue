@@ -375,7 +375,7 @@ const compareJson = () => {
 
 .input-section :deep(.n-input),
 .output-section :deep(.n-input) {
-  height: 300px;
+  height: 600px;
 }
 
 .input-section :deep(.n-input-wrapper),
@@ -386,7 +386,7 @@ const compareJson = () => {
 .input-section :deep(.n-input__textarea),
 .output-section :deep(.n-input__textarea) {
   height: 100%;
-  min-height: 300px;
+  min-height: 600px;
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: 14px;
 }
@@ -396,11 +396,11 @@ const compareJson = () => {
 }
 
 .simple-container :deep(.n-input) {
-  height: 200px;
+  height: 300px;
 }
 
 .simple-container :deep(.n-input__textarea) {
-  min-height: 200px;
+  min-height: 300px;
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: 14px;
 }
@@ -410,11 +410,11 @@ const compareJson = () => {
 }
 
 .diff-container :deep(.n-input) {
-  height: 150px;
+  height: 200px;
 }
 
 .diff-container :deep(.n-input__textarea) {
-  min-height: 150px;
+  min-height: 200px;
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: 14px;
 }
