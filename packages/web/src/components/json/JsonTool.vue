@@ -54,10 +54,6 @@
                     <template #icon><n-icon :component="ClipboardOutline" /></template>
                     粘贴
                   </n-button>
-                  <n-button size="tiny" @click="loadHistory">
-                    <template #icon><n-icon :component="TimeOutline" /></template>
-                    历史
-                  </n-button>
                 </n-space>
               </div>
               <div class="editor-wrapper">
@@ -535,31 +531,6 @@
         {{ successMsg }}
       </n-alert>
 
-      <!-- 历史记录 -->
-      <n-modal v-model:show="showHistory" preset="dialog" title="历史记录" style="width: 600px">
-        <n-space vertical>
-          <n-list>
-            <n-list-item v-for="(item, index) in history" :key="index">
-              <template #prefix>
-                <n-tag size="small">{{ item.type }}</n-tag>
-              </template>
-              <n-space justify="space-between">
-                <small>{{ item.timestamp }}</small>
-                <n-space>
-                  <n-button size="tiny" @click="loadHistoryItem(item)">加载</n-button>
-                  <n-button size="tiny" type="error" @click="removeHistoryItem(index)">删除</n-button>
-                </n-space>
-              </n-space>
-            </n-list-item>
-            <n-list-item v-if="history.length === 0">
-              <n-empty description="暂无历史记录" />
-            </n-list-item>
-          </n-list>
-          <n-space justify="end">
-            <n-button @click="clearHistory">清空历史</n-button>
-          </n-space>
-        </n-space>
-      </n-modal>
     </n-card>
   </div>
 </template>
@@ -573,7 +544,6 @@ import {
 } from 'naive-ui'
 import {
   DocumentTextOutline, CheckmarkCircleOutline, CloseCircleOutline,
-  CopyOutline, TrashOutline, CreateOutline, ClipboardOutline, TimeOutline,
   ShieldCheckmarkOutline, LockClosedOutline, LockOpenOutline, ShieldOutline,
   SearchOutline, HelpCircleOutline, SwapHorizontalOutline, ArrowForwardOutline,
   CodeSlashOutline, DocumentOutline, GitCompareOutline, TextOutline
@@ -668,10 +638,6 @@ const diffFormatOptions = [
   { label: '文本', value: 'text' },
   { label: 'JSON', value: 'json' },
 ]
-
-// 历史记录
-const showHistory = ref(false)
-const history = ref<Array<{ type: string; content: string; timestamp: string }>>([])
 
 // 清空错误
 const clearError = () => {
@@ -784,7 +750,6 @@ const format = () => {
     resultInfo.value = { success: true }
     successMsg.value = '✅ JSON 格式化成功'
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory('格式化', outputJson.value)
   } catch (e) {
     errorMsg.value = `❌ 无效 JSON: ${(e as Error).message}`
     resultInfo.value = { success: false }
@@ -813,7 +778,6 @@ const compress = () => {
     resultInfo.value = { success: true }
     successMsg.value = '✅ JSON 压缩成功'
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory('压缩', outputJson.value)
   } catch (e) {
     errorMsg.value = `❌ 无效 JSON: ${(e as Error).message}`
     resultInfo.value = { success: false }
@@ -841,7 +805,6 @@ const escapeStr = () => {
     resultInfo.value = { success: true }
     successMsg.value = '✅ 字符串转义成功'
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory('字符串转义', outputJson.value)
   } catch (e) {
     errorMsg.value = `转义失败：${(e as Error).message}`
     resultInfo.value = { success: false }
@@ -855,7 +818,6 @@ const unescapeStr = () => {
     resultInfo.value = { success: true }
     successMsg.value = '✅ 去除转义成功'
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory('去除转义', outputJson.value)
   } catch (e) {
     errorMsg.value = `去转义失败：${(e as Error).message}`
     resultInfo.value = { success: false }
@@ -869,7 +831,6 @@ const escapeAll = () => {
     resultInfo.value = { success: true }
     successMsg.value = '✅ 全部转义成功'
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory('全部转义', outputJson.value)
   } catch (e) {
     errorMsg.value = `全部转义失败：${(e as Error).message}`
     resultInfo.value = { success: false }
@@ -883,7 +844,6 @@ const unescapeAll = () => {
     resultInfo.value = { success: true }
     successMsg.value = '✅ 全部去转义成功'
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory('全部去转义', outputJson.value)
   } catch (e) {
     errorMsg.value = `全部去转义失败：${(e as Error).message}`
     resultInfo.value = { success: false }
@@ -904,7 +864,6 @@ const queryJsonPath = () => {
     resultInfo.value = { success: true, count: result.resultCount }
     successMsg.value = `✅ 查询成功，找到 ${result.resultCount} 个结果`
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory('JSONPath', outputJson.value)
   } else {
     errorMsg.value = result.error || '查询失败'
     resultInfo.value = { success: false }
@@ -942,7 +901,6 @@ const convertFormat = () => {
         resultInfo.value = { success: true }
         successMsg.value = `✅ 已从 ${source.toUpperCase()} 转换到 ${target.toUpperCase()}`
         updateEditor(outputEditorInstance, outputJson.value)
-        addToHistory(`转换：${source}→${target}`, outputJson.value)
       } else {
         errorMsg.value = result.error || '转换失败'
         resultInfo.value = { success: false }
@@ -965,7 +923,6 @@ const escapeForLanguage = () => {
     resultInfo.value = { success: true }
     successMsg.value = `✅ 已为 ${escapeLanguage.value.toUpperCase()} 转义`
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory(`语言转义：${escapeLanguage.value}`, outputJson.value)
   } else {
     errorMsg.value = result.error || '转义失败'
     resultInfo.value = { success: false }
@@ -980,7 +937,6 @@ const unescapeFromLanguage = () => {
     resultInfo.value = { success: true }
     successMsg.value = `✅ 已从 ${escapeLanguage.value.toUpperCase()} 还原`
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory(`语言还原：${escapeLanguage.value}`, outputJson.value)
   } else {
     errorMsg.value = result.error || '还原失败'
     resultInfo.value = { success: false }
@@ -1005,7 +961,6 @@ const compareJson = () => {
       successMsg.value = '⚠️ 发现差异'
     }
     updateEditor(outputEditorInstance, outputJson.value)
-    addToHistory('差异比较', outputJson.value)
   } else {
     errorMsg.value = result.error || '比较失败'
     resultInfo.value = { success: false }
@@ -1065,81 +1020,8 @@ const clearAll = () => {
   }
 }
 
-// 历史记录管理
-const addToHistory = (type: string, content: string) => {
-  const now = new Date()
-  const timestamp = now.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })
-  
-  history.value.unshift({
-    type,
-    content: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
-    timestamp
-  })
-  
-  // 限制历史记录数量
-  if (history.value.length > 20) {
-    history.value.pop()
-  }
-  
-  // 保存到 localStorage
-  saveHistory()
-}
-
-const saveHistory = () => {
-  try {
-    localStorage.setItem('jtool-json-history', JSON.stringify(history.value))
-  } catch {
-    // 忽略存储错误
-  }
-}
-
-const loadHistory = () => {
-  // 从 localStorage 加载历史
-  try {
-    const saved = localStorage.getItem('jtool-json-history')
-    if (saved) {
-      history.value = JSON.parse(saved)
-    }
-  } catch {
-    history.value = []
-  }
-  showHistory.value = true
-}
-
-const loadHistoryItem = (item: typeof history.value[0]) => {
-  inputJson.value = item.content
-  onInputChanged(item.content)
-  if (inputEditorInstance) {
-    inputEditorInstance.setValue(item.content)
-  }
-  showHistory.value = false
-  successMsg.value = '✅ 已加载历史记录'
-}
-
-const removeHistoryItem = (index: number) => {
-  history.value.splice(index, 1)
-  saveHistory()
-}
-
-const clearHistory = () => {
-  if (window.confirm('确定要清空所有历史记录吗？')) {
-    history.value = []
-    saveHistory()
-  }
-}
-
 // 生命周期
 onMounted(() => {
-  // 加载历史记录
-  loadHistory()
-  
   // 初始化 Monaco Editor
   initMonacoEditor()
   
