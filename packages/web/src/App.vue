@@ -15,7 +15,7 @@
         <aside class="sidebar" :class="{ open: showMenu }">
           <div class="logo">
             <h1>🛠️ JTool</h1>
-            <span class="version">v0.1.0</span>
+            <span class="version">v0.2.0</span>
           </div>
 
           <n-menu
@@ -33,7 +33,12 @@
 
         <!-- 主内容区 -->
         <main class="main-content">
-          <component :is="currentToolComponent" />
+          <router-view v-slot="{ Component, route }">
+            <transition name="fade" mode="out-in">
+              <component :is="Component" :key="route.fullPath" v-if="Component" />
+              <ToolSkeleton v-else />
+            </transition>
+          </router-view>
         </main>
 
         <!-- 移动端遮罩 -->
@@ -44,32 +49,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, h } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { darkTheme, NConfigProvider, NMessageProvider, NMenu, NButton } from 'naive-ui'
-import { hash, base64, timestampToDateTime, jsonFormat, generateQRCode, urlEncode, textStats } from '@jtool/core'
-import AsciiTool from './components/ascii/AsciiTool.vue'
-import IPCalculatorTool from './components/ip-calculator/IPCalculatorTool.vue'
-import UnitConverterTool from './components/unit-converter/UnitConverterTool.vue'
-import UUIDGeneratorTool from './components/uuid/UUIDGeneratorTool.vue'
-import RandomGeneratorTool from './components/random/RandomGeneratorTool.vue'
+import ToolSkeleton from './components/common/ToolSkeleton.vue'
 
-const activeTool = ref('ipcalculator')
+const router = useRouter()
+const route = useRoute()
+
+const activeTool = ref('home')
 const showMenu = ref(false)
 const isDark = ref(true)
 
 const menuOptions = [
-  { label: '🔄 单位换算', key: 'unitconverter' },
-  { label: '🌐 IP 计算器', key: 'ipcalculator' },
-  { label: '📐 哈希计算', key: 'hash' },
-  { label: '🔐 BASE64', key: 'base64' },
-  { label: '🕐 时间戳', key: 'timestamp' },
+  { label: '🏠 首页', key: 'home' },
   { label: '📝 JSON', key: 'json' },
-  { label: '📱 二维码', key: 'qrcode' },
+  { label: '🔐 BASE64', key: 'base64' },
   { label: '🔗 URL', key: 'url' },
+  { label: '📐 哈希计算', key: 'hash' },
+  { label: '🕐 时间戳', key: 'timestamp' },
+  { label: '📱 二维码', key: 'qrcode' },
   { label: '📄 文本', key: 'text' },
+  { label: '🔍 正则测试', key: 'regex' },
+  { label: '🔑 JWT', key: 'jwt' },
+  { label: '🌐 IP 计算器', key: 'ipcalculator' },
   { label: '🔢 ASCII', key: 'ascii' },
   { label: '🔖 UUID', key: 'uuid' },
   { label: '🎲 随机字符', key: 'random' },
+  { label: '🔄 单位换算', key: 'unitconverter' },
 ]
 
 const toggleMenu = () => {
@@ -82,28 +89,31 @@ const toggleTheme = () => {
 
 const handleToolChange = (key: string) => {
   activeTool.value = key
+  if (key === 'home') {
+    router.push('/')
+  } else {
+    router.push(`/${key}`)
+  }
   if (window.innerWidth < 768) {
     showMenu.value = false
   }
 }
 
-// 工具组件
-const toolComponents: Record<string, any> = {
-  unitconverter: UnitConverterTool,
-  ipcalculator: IPCalculatorTool,
-  hash: { template: '<div>哈希计算工具</div>' },
-  base64: { template: '<div>BASE64 工具</div>' },
-  timestamp: { template: '<div>时间戳工具</div>' },
-  json: { template: '<div>JSON 工具</div>' },
-  qrcode: { template: '<div>二维码工具</div>' },
-  url: { template: '<div>URL 工具</div>' },
-  text: { template: '<div>文本工具</div>' },
-  ascii: AsciiTool,
-  uuid: UUIDGeneratorTool,
-  random: RandomGeneratorTool,
-}
-
-const currentToolComponent = computed(() => toolComponents[activeTool.value])
+// 监听路由变化，同步菜单选中状态
+watch(
+  () => route.path,
+  (newPath) => {
+    if (newPath === '/') {
+      activeTool.value = 'home'
+    } else {
+      const path = newPath.substring(1)
+      if (menuOptions.some(opt => opt.key === path)) {
+        activeTool.value = path
+      }
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style>
@@ -113,6 +123,7 @@ const currentToolComponent = computed(() => toolComponents[activeTool.value])
   --text-primary: #e0e0e0;
   --text-secondary: #a0a0a0;
   --border: #333333;
+  --primary: #18a058;
 }
 
 * {
@@ -192,6 +203,17 @@ body {
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 99;
+}
+
+/* 路由过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 /* 移动端响应式 */
