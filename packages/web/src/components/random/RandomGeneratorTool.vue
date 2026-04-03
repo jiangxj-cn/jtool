@@ -129,7 +129,7 @@
             class="result-item"
           >
             <div class="result-value">
-              <n-code :text="result.value" />
+              <n-text>{{ result.value }}</n-text>
             </div>
             <div class="result-actions">
               <n-button size="small" quaternary @click="copySingle(result.value)">
@@ -177,15 +177,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import {
   NRadioGroup, NRadioButton, NInputNumber, NSlider, NCheckbox,
-  NSelect, NButton, NSpace, NText, NTag, NCode, NGrid, NStatistic,
+  NSelect, NButton, NSpace, NText, NTag, NGrid, NStatistic,
   useMessage
 } from 'naive-ui'
 import {
   generateRandomString, generateRandomPassword, generateRandomNumber,
-  batchGenerateRandomString, batchGenerateRandomPassword, batchGenerateRandomNumber,
   type CharacterSet, type PasswordOptions
 } from '@jtool/core'
 
@@ -260,8 +259,14 @@ const generate = () => {
           value = generateRandomNumber(length.value, includeLeadingZero.value)
         }
         batchResults.push(value)
+        console.log(`[RandomGenerator] 第${i+1}个结果:`, value)
       }
-      results.value = batchResults.map(v => ({ value: v, type: generatorType.value }))
+      // 强制响应式更新
+      results.value = []
+      nextTick(() => {
+        results.value = batchResults.map(v => ({ value: v, type: generatorType.value }))
+        console.log('[RandomGenerator] 批量结果已设置:', results.value.length, '个')
+      })
     } else {
       // 单个生成
       if (generatorType.value === 'string') {
@@ -274,13 +279,17 @@ const generate = () => {
       } else {
         value = generateRandomNumber(length.value, includeLeadingZero.value)
       }
-      results.value = [{ value, type: generatorType.value }]
+      console.log('[RandomGenerator] 生成结果:', value)
+      // 强制响应式更新
+      results.value = []
+      nextTick(() => {
+        results.value = [{ value, type: generatorType.value }]
+        console.log('[RandomGenerator] 单个结果已设置')
+      })
     }
 
     generationTime.value = Date.now() - startTime
-    console.log('[RandomGenerator] 生成成功，结果数:', results.value.length)
-    console.log('[RandomGenerator] 第一个结果:', results.value[0]?.value)
-    message.success(`生成成功，${results.value.length} 个结果`)
+    message.success(`生成成功，${enableBatch.value ? batchCount.value : 1} 个结果`)
   } catch (error) {
     console.error('[RandomGenerator] 生成失败:', error)
     message.error(error instanceof Error ? error.message : '生成失败')
