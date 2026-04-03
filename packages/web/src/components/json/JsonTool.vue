@@ -27,6 +27,7 @@
 
       <!-- Tab 切换 -->
       <n-tabs type="line" v-model:value="activeTab">
+        <!-- 基础功能 -->
         <n-tab-pane name="basic" tab="基础功能">
           <div class="editor-container">
             <div class="input-section">
@@ -50,6 +51,7 @@
           </div>
         </n-tab-pane>
 
+        <!-- 转义工具 -->
         <n-tab-pane name="escape" tab="转义工具">
           <div class="editor-container">
             <div class="input-section">
@@ -59,6 +61,12 @@
                 placeholder="请输入要转义的内容..."
                 :rows="10"
               />
+              <n-space style="margin-top: 12px">
+                <n-button @click="escapeStr">字符串转义</n-button>
+                <n-button @click="unescapeStr">去除转义</n-button>
+                <n-button @click="escapeAll">全部转义</n-button>
+                <n-button @click="unescapeAll">全部去转义</n-button>
+              </n-space>
             </div>
             <div class="output-section">
               <n-input
@@ -72,6 +80,7 @@
           </div>
         </n-tab-pane>
 
+        <!-- JSONPath 查询 -->
         <n-tab-pane name="jsonpath" tab="JSONPath">
           <div class="simple-container">
             <n-input
@@ -99,6 +108,7 @@
           </div>
         </n-tab-pane>
 
+        <!-- 格式转换 -->
         <n-tab-pane name="convert" tab="格式转换">
           <div class="simple-container">
             <n-input
@@ -124,6 +134,7 @@
           </div>
         </n-tab-pane>
 
+        <!-- 差异比较 -->
         <n-tab-pane name="diff" tab="差异比较">
           <div class="diff-container">
             <n-input
@@ -211,6 +222,7 @@ const clearError = () => {
   successMsg.value = ''
 }
 
+// 基础功能
 const format = () => {
   clearError()
   try {
@@ -281,6 +293,50 @@ const onInputChanged = (value: string) => {
   }
 }
 
+// 转义工具
+const escapeStr = () => {
+  clearError()
+  try {
+    outputJson.value = JSON.stringify(inputJson.value)
+    successMsg.value = '✓ 字符串转义成功'
+  } catch (e) {
+    errorMsg.value = `转义失败：${(e as Error).message}`
+  }
+}
+
+const unescapeStr = () => {
+  clearError()
+  try {
+    outputJson.value = JSON.parse(inputJson.value)
+    successMsg.value = '✓ 去除转义成功'
+  } catch (e) {
+    errorMsg.value = `去转义失败：${(e as Error).message}`
+  }
+}
+
+const escapeAll = () => {
+  clearError()
+  outputJson.value = inputJson.value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')
+  successMsg.value = '✓ 全部转义成功'
+}
+
+const unescapeAll = () => {
+  clearError()
+  outputJson.value = inputJson.value
+    .replace(/\\"/g, '"')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r')
+    .replace(/\\t/g, '\t')
+    .replace(/\\\\/g, '\\')
+  successMsg.value = '✓ 全部去转义成功'
+}
+
+// JSONPath 查询
 const queryJsonPath = () => {
   clearError()
   try {
@@ -293,21 +349,47 @@ const queryJsonPath = () => {
   }
 }
 
+// 格式转换
 const convertFormat = () => {
   clearError()
   try {
     const obj = JSON5.parse(inputJson.value)
+    
     if (convertTarget.value === 'yaml') {
-      outputJson.value = JSON.stringify(obj, null, 2)
+      // JSON 转 YAML（简单实现）
+      outputJson.value = Object.entries(obj)
+        .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+        .join('\n')
+    } else if (convertTarget.value === 'xml') {
+      // JSON 转 XML（简单实现）
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n'
+      for (const [key, value] of Object.entries(obj)) {
+        xml += `  <${key}>${value}</${key}>\n`
+      }
+      xml += '</root>'
+      outputJson.value = xml
+    } else if (convertTarget.value === 'csv') {
+      // JSON 转 CSV（简单实现，仅支持扁平对象数组）
+      if (Array.isArray(obj) && obj.length > 0) {
+        const headers = Object.keys(obj[0])
+        const rows = obj.map(item => headers.map(h => JSON.stringify(item[h])).join(','))
+        outputJson.value = [headers.join(','), ...rows].join('\n')
+      } else {
+        const headers = Object.keys(obj)
+        const values = headers.map(h => JSON.stringify(obj[h]))
+        outputJson.value = [headers.join(','), values.join(',')].join('\n')
+      }
     } else {
       outputJson.value = JSON.stringify(obj, null, 2)
     }
+    
     successMsg.value = `✓ 已转换为 ${convertTarget.value.toUpperCase()}`
   } catch (e) {
     errorMsg.value = `转换失败：${(e as Error).message}`
   }
 }
 
+// 差异比较
 const compareJson = () => {
   clearError()
   try {
@@ -319,7 +401,7 @@ const compareJson = () => {
       outputJson.value = '两个 JSON 完全相同'
       successMsg.value = '✓ 完全相同'
     } else {
-      outputJson.value = '两个 JSON 存在差异'
+      outputJson.value = '两个 JSON 存在差异\n\nJSON1: ' + JSON.stringify(obj1, null, 2) + '\n\nJSON2: ' + JSON.stringify(obj2, null, 2)
       errorMsg.value = '发现差异'
     }
   } catch (e) {
