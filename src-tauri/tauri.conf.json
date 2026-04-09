@@ -10,6 +10,10 @@
     "beforeBuildCommand": "pnpm build:web"
   },
   "app": {
+    "trayIcon": {
+      "iconPath": "icons/icon.ico",
+      "iconAsTemplate": true
+    },
     "windows": [
       {
         "title": "JTool - 开发者工具集",
@@ -20,7 +24,8 @@
         "resizable": true,
         "fullscreen": false,
         "theme": "Dark",
-        "devtools": true
+        "devtools": true,
+        "visible": true
       }
     ],
     "security": {

@@ -307,3 +307,9 @@ body {
   }
 }
 </style>
+
+// 设置相关
+const showSettings = ref(false)
+
+// 导入设置组件
+import Settings from './components/Settings.vue'
