@@ -336,77 +336,478 @@ const unescapeAll = () => {
   successMsg.value = '✓ 全部去转义成功'
 }
 
-// JSONPath 查询
+// JSONPath 查询（自实现，无外部依赖）
 const queryJsonPath = () => {
   clearError()
   try {
     const obj = JSON5.parse(inputJson.value)
-    // 简单实现，实际应该用 jsonpath-plus
-    outputJson.value = JSON.stringify(obj, null, 2)
-    successMsg.value = '✓ 查询完成'
+    const res = evalJsonPath(obj, jsonpathQuery.value)
+    if (res.error) {
+      errorMsg.value = `查询失败：${res.error}`
+      return
+    }
+    if (res.values.length === 0) {
+      outputJson.value = '未找到匹配的结果'
+      successMsg.value = '✓ 查询完成，匹配 0 项'
+      return
+    }
+    outputJson.value = JSON.stringify(res.values.length === 1 ? res.values[0] : res.values, null, 2)
+    successMsg.value = `✓ 查询完成，匹配 ${res.values.length} 项`
   } catch (e) {
     errorMsg.value = `查询失败：${(e as Error).message}`
   }
 }
 
-// 格式转换
+// 格式转换（自实现，无外部依赖）
 const convertFormat = () => {
   clearError()
   try {
-    const obj = JSON5.parse(inputJson.value)
-    
-    if (convertTarget.value === 'yaml') {
-      // JSON 转 YAML（简单实现）
-      outputJson.value = Object.entries(obj)
-        .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
-        .join('\n')
-    } else if (convertTarget.value === 'xml') {
-      // JSON 转 XML（简单实现）
-      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n'
-      for (const [key, value] of Object.entries(obj)) {
-        xml += `  <${key}>${value}</${key}>\n`
-      }
-      xml += '</root>'
-      outputJson.value = xml
-    } else if (convertTarget.value === 'csv') {
-      // JSON 转 CSV（简单实现，仅支持扁平对象数组）
-      if (Array.isArray(obj) && obj.length > 0) {
-        const headers = Object.keys(obj[0])
-        const rows = obj.map(item => headers.map(h => JSON.stringify(item[h])).join(','))
-        outputJson.value = [headers.join(','), ...rows].join('\n')
-      } else {
-        const headers = Object.keys(obj)
-        const values = headers.map(h => JSON.stringify(obj[h]))
-        outputJson.value = [headers.join(','), values.join(',')].join('\n')
-      }
-    } else {
-      outputJson.value = JSON.stringify(obj, null, 2)
+    const source = convertSource.value
+    const target = convertTarget.value
+    const text = inputJson.value
+    if (!text.trim()) {
+      errorMsg.value = '请输入要转换的内容'
+      return
     }
-    
-    successMsg.value = `✓ 已转换为 ${convertTarget.value.toUpperCase()}`
+    if (source === target) {
+      outputJson.value = text
+      successMsg.value = '✓ 源格式与目标格式相同'
+      return
+    }
+    const res = convertBetween(source, target, text)
+    if (!res.ok) {
+      errorMsg.value = `转换失败：${res.error}`
+      return
+    }
+    outputJson.value = res.result ?? ''
+    successMsg.value = `✓ 已转换为 ${target.toUpperCase()}`
   } catch (e) {
     errorMsg.value = `转换失败：${(e as Error).message}`
   }
 }
 
-// 差异比较
+// 差异比较（自实现，无外部依赖）
 const compareJson = () => {
   clearError()
   try {
     const obj1 = JSON5.parse(inputJson1.value)
     const obj2 = JSON5.parse(inputJson2.value)
-    const str1 = JSON.stringify(obj1)
-    const str2 = JSON.stringify(obj2)
-    if (str1 === str2) {
-      outputJson.value = '两个 JSON 完全相同'
+    const s1 = canonicalJSON(obj1)
+    const s2 = canonicalJSON(obj2)
+    if (s1 === s2) {
+      outputJson.value = '✅ 两个 JSON 完全相同'
       successMsg.value = '✓ 完全相同'
-    } else {
-      outputJson.value = '两个 JSON 存在差异\n\nJSON1: ' + JSON.stringify(obj1, null, 2) + '\n\nJSON2: ' + JSON.stringify(obj2, null, 2)
-      errorMsg.value = '发现差异'
+      return
     }
+    outputJson.value = lineDiff(s1, s2)
+    errorMsg.value = '发现差异'
   } catch (e) {
     errorMsg.value = `比较失败：${(e as Error).message}`
   }
+}
+
+// ===== JSONPath 求值器（支持 $ .key [*] [n] [?(过滤)] $..递归 [a,b]）=====
+interface JsonPathOut { values: any[]; error?: string }
+
+function evalJsonPath(root: any, path: string): JsonPathOut {
+  if (!path || !path.trim()) return { values: [], error: '请输入 JSONPath 表达式' }
+  if (path[0] !== '$') return { values: [], error: 'JSONPath 必须以 $ 开头' }
+  let nodes: any[] = [root]
+  let i = 1
+  while (i < path.length) {
+    const c = path[i]
+    if (c === '.') {
+      if (path[i + 1] === '[') {
+        // 点号后紧跟方括号（如 $[*].[a,b]），跳过点号交给方括号处理
+        i++
+        continue
+      }
+      if (path[i + 1] === '.') {
+        // 递归下降 $..key
+        i += 2
+        let name = ''
+        while (i < path.length && /[A-Za-z0-9_@]/.test(path[i])) { name += path[i]; i++ }
+        const next: any[] = []
+        const collect = (cur: any) => {
+          if (cur && typeof cur === 'object') {
+            if (Array.isArray(cur)) cur.forEach(collect)
+            else {
+              if (name in cur) next.push(cur[name])
+              Object.values(cur).forEach(collect)
+            }
+          }
+        }
+        nodes.forEach(collect)
+        nodes = next
+        continue
+      }
+      i++
+      let name = ''
+      while (i < path.length && /[A-Za-z0-9_]/.test(path[i])) { name += path[i]; i++ }
+      nodes = nodes
+        .map(n => (n && typeof n === 'object' && name in n) ? n[name] : undefined)
+        .filter(v => v !== undefined)
+      continue
+    }
+    if (c === '[') {
+      const end = path.indexOf(']', i)
+      if (end === -1) return { values: [], error: '括号不匹配' }
+      const inner = path.slice(i + 1, end).trim()
+      i = end + 1
+      if (inner === '*') {
+        const next: any[] = []
+        nodes.forEach(n => {
+          if (Array.isArray(n)) n.forEach(v => next.push(v))
+          else if (n && typeof n === 'object') Object.values(n).forEach(v => next.push(v))
+        })
+        nodes = next
+      } else if (inner.startsWith('?')) {
+        let expr = inner.slice(1).trim()
+        expr = expr.replace(/^\(/, '').replace(/\)$/, '')
+        const m = expr.match(/^@\.([A-Za-z0-9_]+)\s*(<=|>=|==|!=|<|>)\s*(.+)$/)
+        if (!m) return { values: [], error: '不支持的过滤表达式' }
+        const key = m[1]
+        const op = m[2]
+        let val: any = m[3].trim()
+        if ((val.startsWith("'") && val.endsWith("'")) || (val.startsWith('"') && val.endsWith('"'))) val = val.slice(1, -1)
+        else if (val === 'true') val = true
+        else if (val === 'false') val = false
+        else if (val === 'null') val = null
+        else if (!isNaN(Number(val))) val = Number(val)
+        const next: any[] = []
+        nodes.forEach(n => {
+          if (Array.isArray(n)) n.forEach(item => { if (matchFilter(item, key, op, val)) next.push(item) })
+          else if (n && typeof n === 'object' && matchFilter(n, key, op, val)) next.push(n)
+        })
+        nodes = next
+      } else if (/^[0-9]+$/.test(inner)) {
+        const idx = parseInt(inner, 10)
+        nodes = nodes.map(n => (Array.isArray(n) ? n[idx] : undefined)).filter(v => v !== undefined)
+      } else if (inner.includes(',')) {
+        const props = inner.split(',').map(s => s.trim()).filter(Boolean)
+        const next: any[] = []
+        nodes.forEach(n => {
+          if (n && typeof n === 'object') {
+            const o: any = {}
+            props.forEach(p => { if (p in n) o[p] = n[p] })
+            next.push(o)
+          }
+        })
+        nodes = next
+      } else {
+        return { values: [], error: `不支持的索引表达式: ${inner}` }
+      }
+      continue
+    }
+    i++
+  }
+  return { values: nodes }
+}
+
+function matchFilter(item: any, key: string, op: string, val: any): boolean {
+  if (!item || typeof item !== 'object' || !(key in item)) return false
+  const left = item[key]
+  switch (op) {
+    case '<': return left < val
+    case '>': return left > val
+    case '<=': return left <= val
+    case '>=': return left >= val
+    case '==': return left == val
+    case '!=': return left != val
+  }
+  return false
+}
+
+// ===== 差异比较辅助 =====
+function sortKeys(o: any): any {
+  if (Array.isArray(o)) return o.map(sortKeys)
+  if (o && typeof o === 'object') {
+    const r: any = {}
+    Object.keys(o).sort().forEach(k => { r[k] = sortKeys(o[k]) })
+    return r
+  }
+  return o
+}
+
+function canonicalJSON(obj: any): string {
+  return JSON.stringify(sortKeys(obj), null, 2)
+}
+
+function lineDiff(a: string, b: string): string {
+  const A = a.split('\n')
+  const B = b.split('\n')
+  const n = A.length
+  const m = B.length
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0))
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1])
+    }
+  }
+  const out: string[] = []
+  let i = 0
+  let j = 0
+  while (i < n && j < m) {
+    if (A[i] === B[j]) { out.push('  ' + A[i]); i++; j++ }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) { out.push('- ' + A[i]); i++ }
+    else { out.push('+ ' + B[j]); j++ }
+  }
+  while (i < n) { out.push('- ' + A[i]); i++ }
+  while (j < m) { out.push('+ ' + B[j]); j++ }
+  return out.join('\n')
+}
+
+// ===== 格式转换辅助 =====
+interface ConvertOut { ok: boolean; result?: string; error?: string }
+
+function convertBetween(src: string, tgt: string, text: string): ConvertOut {
+  try {
+    if (src === 'json') {
+      const obj = JSON5.parse(text)
+      if (tgt === 'yaml') return { ok: true, result: toYaml(obj) }
+      if (tgt === 'xml') return { ok: true, result: toXml(obj) }
+      if (tgt === 'csv') return { ok: true, result: toCsv(obj) }
+    }
+    if (src === 'yaml' && tgt === 'json') return { ok: true, result: JSON.stringify(parseYaml(text), null, 2) }
+    if (src === 'xml' && tgt === 'json') return { ok: true, result: JSON.stringify(xmlToObj(text), null, 2) }
+    if (src === 'csv' && tgt === 'json') return { ok: true, result: JSON.stringify(parseCsv(text), null, 2) }
+    return { ok: false, error: '暂不支持该转换方向（目前支持 JSON 与各格式互转）' }
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
+}
+
+function toYaml(obj: any, indent = 0): string {
+  const pad = '  '.repeat(indent)
+  if (obj === null || obj === undefined) return pad + 'null'
+  if (typeof obj !== 'object') return pad + yamlScalar(obj)
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) return pad + '[]'
+    return obj.map(item => {
+      if (item !== null && typeof item === 'object') {
+        const sub = toYaml(item, indent + 1)
+        const lines = sub.split('\n')
+        lines[0] = pad + '- ' + lines[0].slice((indent + 1) * 2)
+        return lines.join('\n')
+      }
+      return pad + '- ' + yamlScalar(item)
+    }).join('\n')
+  }
+  const keys = Object.keys(obj)
+  if (keys.length === 0) return pad + '{}'
+  return keys.map(k => {
+    const v = obj[k]
+    if (v !== null && typeof v === 'object') {
+      return pad + k + ':\n' + toYaml(v, indent + 1)
+    }
+    return pad + k + ': ' + yamlScalar(v)
+  }).join('\n')
+}
+
+function yamlScalar(v: any): string {
+  if (typeof v === 'string') {
+    return /[:#{}[\],&*?|<>=!%@`"' ]/.test(v) || v === '' ? JSON.stringify(v) : v
+  }
+  return String(v)
+}
+
+function toXml(obj: any): string {
+  const build = (o: any): string => {
+    if (o === null || o === undefined) return ''
+    if (typeof o !== 'object') return escapeXml(String(o))
+    if (Array.isArray(o)) return o.map(item => `<item>${build(item)}</item>`).join('')
+    return Object.entries(o).map(([k, v]) => `<${k}>${build(v)}</${k}>`).join('')
+  }
+  let rootName = 'root'
+  let content: any = obj
+  if (!Array.isArray(obj) && obj && typeof obj === 'object' && Object.keys(obj).length === 1) {
+    rootName = Object.keys(obj)[0]
+    content = obj[rootName]
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<${rootName}>\n  ${build(content)}\n</${rootName}>`
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function xmlToObj(text: string): any {
+  const cleaned = text.replace(/<\?xml[^>]*\?>/, '').replace(/<!--[\s\S]*?-->/g, '').trim()
+  let i = 0
+  function parse(): any {
+    const childMap: Record<string, any> = {}
+    let textContent = ''
+    while (i < cleaned.length) {
+      if (cleaned[i] === '<') {
+        if (cleaned[i + 1] === '/') {
+          const end = cleaned.indexOf('>', i)
+          i = end + 1
+          break
+        }
+        const end = cleaned.indexOf('>', i)
+        const tagName = cleaned.slice(i + 1, end).split(/\s/)[0]
+        i = end + 1
+        const val = parse()
+        if (Object.prototype.hasOwnProperty.call(childMap, tagName)) {
+          if (!Array.isArray(childMap[tagName])) childMap[tagName] = [childMap[tagName]]
+          childMap[tagName].push(val)
+        } else {
+          childMap[tagName] = val
+        }
+      } else {
+        let end = cleaned.indexOf('<', i)
+        if (end === -1) end = cleaned.length
+        textContent += cleaned.slice(i, end)
+        i = end
+      }
+    }
+    if (Object.keys(childMap).length > 0) {
+      // 约定：唯一子键为 item 时表示数组（<item> 为数组元素包裹标签）
+      if (Object.keys(childMap).length === 1 && Object.prototype.hasOwnProperty.call(childMap, 'item')) {
+        return Array.isArray(childMap.item) ? childMap.item : [childMap.item]
+      }
+      return childMap
+    }
+    const t = textContent.trim()
+    if (t === '') return null
+    if (!isNaN(Number(t))) return Number(t)
+    if (t === 'true') return true
+    if (t === 'false') return false
+    return t
+  }
+  return parse()
+}
+
+function toCsv(obj: any): string {
+  const arr = Array.isArray(obj) ? obj : [obj]
+  if (arr.length === 0) return ''
+  const headers = Array.from(new Set(arr.flatMap(o => (o && typeof o === 'object') ? Object.keys(o) : [])))
+  const esc = (v: any) => {
+    if (v === null || v === undefined) return ''
+    const s = typeof v === 'object' ? JSON.stringify(v) : String(v)
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+  }
+  const lines = [headers.join(',')]
+  for (const item of arr) {
+    lines.push(headers.map(h => esc(item ? item[h] : '')).join(','))
+  }
+  return lines.join('\n')
+}
+
+function parseCsv(text: string): any[] {
+  const rows = csvRows(text)
+  if (rows.length === 0) return []
+  const headers = rows[0]
+  return rows.slice(1).map(r => {
+    const o: any = {}
+    headers.forEach((h, idx) => { o[h] = csvVal(r[idx]) })
+    return o
+  })
+}
+
+function csvRows(text: string): string[][] {
+  const rows: string[][] = []
+  let row: string[] = []
+  let cur = ''
+  let q = false
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (q) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++ } else q = false
+      } else cur += ch
+    } else {
+      if (ch === '"') q = true
+      else if (ch === ',') { row.push(cur); cur = '' }
+      else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = '' }
+      else if (ch === '\r') { /* skip */ }
+      else cur += ch
+    }
+  }
+  if (cur !== '' || row.length > 0) { row.push(cur); rows.push(row) }
+  return rows
+}
+
+function csvVal(s: string): any {
+  if (s === '') return ''
+  if (s === 'true') return true
+  if (s === 'false') return false
+  if (s === 'null') return null
+  if (!isNaN(Number(s))) return Number(s)
+  return s
+}
+
+function parseYaml(text: string): any {
+  const lines = text.split('\n')
+    .map(l => l.replace(/\t/g, '  '))
+    .filter(l => l.trim() !== '' && !l.trimStart().startsWith('#'))
+  let idx = 0
+  const lead = (l: string) => l.length - l.trimStart().length
+  function parseScalar(v: string): any {
+    if (v === '[]') return []
+    if (v === '{}') return {}
+    if (v === 'null') return null
+    if (v === 'true') return true
+    if (v === 'false') return false
+    if (/^".*"$/.test(v) || /^'.*'$/.test(v)) return v.slice(1, -1)
+    if (!isNaN(Number(v))) return Number(v)
+    return v
+  }
+  function parseBlock(indent: number): any {
+    if (idx >= lines.length) return null
+    const firstIndent = lead(lines[idx])
+    if (lines[idx].trimStart().startsWith('- ')) {
+      const arr: any[] = []
+      while (idx < lines.length && lead(lines[idx]) === firstIndent && lines[idx].trimStart().startsWith('- ')) {
+        const content = lines[idx].trimStart().slice(2)
+        if (content === '') {
+          idx++
+          arr.push(parseBlock(firstIndent + 1))
+        } else if (content.includes(': ')) {
+          // '- key: val' 内联对象首行
+          const sub: any = {}
+          const ci = content.indexOf(':')
+          const key = content.slice(0, ci).trim()
+          const val = content.slice(ci + 1).trim()
+          if (val === '') {
+            idx++
+            sub[key] = parseBlock(lead(lines[idx]))
+          } else {
+            sub[key] = parseScalar(val)
+            idx++
+          }
+          // 继续读同一对象的后续缩进行
+          while (idx < lines.length && lead(lines[idx]) > firstIndent && !lines[idx].trimStart().startsWith('- ')) {
+            const kv = lines[idx].trimStart()
+            const k2 = kv.slice(0, kv.indexOf(':')).trim()
+            const v2 = kv.slice(kv.indexOf(':') + 1).trim()
+            if (v2 === '') { idx++; sub[k2] = parseBlock(lead(lines[idx])) }
+            else { sub[k2] = parseScalar(v2); idx++ }
+          }
+          arr.push(sub)
+        } else {
+          arr.push(parseScalar(content))
+          idx++
+        }
+      }
+      return arr
+    }
+    const obj: any = {}
+    while (idx < lines.length && lead(lines[idx]) === firstIndent && !lines[idx].trimStart().startsWith('- ')) {
+      const kv = lines[idx].trimStart()
+      const ci = kv.indexOf(':')
+      const key = kv.slice(0, ci).trim()
+      const val = kv.slice(ci + 1).trim()
+      if (val === '') {
+        idx++
+        obj[key] = parseBlock(lead(lines[idx]))
+      } else if (val === '[]') { obj[key] = []; idx++ }
+      else if (val === '{}') { obj[key] = {}; idx++ }
+      else { obj[key] = parseScalar(val); idx++ }
+    }
+    return obj
+  }
+  return parseBlock(0)
 }
 </script>
 

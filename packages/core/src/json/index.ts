@@ -26,32 +26,13 @@ export {
 } from './escape'
 
 export {
-  jsonPathQuery,
-  getJsonPathExamples,
-  type JSONPathResult,
-} from './jsonpath'
-
-export {
-  jsonToYaml,
-  yamlToJson,
-  jsonToXml,
-  xmlToJson,
-  jsonToCsv,
-  csvToJson,
-  jsonToJsObject,
-  type ConvertResult,
-} from './convert'
-
-export {
-  jsonDiffCompare,
-  getDiffStats,
-  type DiffResult,
-} from './diff'
-
-export {
   jsonEscapeForLanguage,
   unescapeFromLanguage,
   getSupportedLanguages,
   type EscapeLanguage,
   type EscapeResult,
 } from './escape-enhanced'
+
+// 说明：JSON 的 jsonpath / convert / diff 模块已删除（依赖 js-yaml、xml-js、
+// jsonpath-plus、diff、jsondiffpatch 未安装，且 web 端 JSON 工具已改为无外部依赖
+// 的自实现）。如需恢复这些功能，请先在 core/package.json 安装上述依赖并实现。

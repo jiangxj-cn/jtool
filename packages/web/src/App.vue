@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="darkTheme">
+  <n-config-provider :theme="isDark ? darkTheme : lightTheme">
     <n-message-provider>
       <div class="app-container">
         <!-- 移动端顶部导航 -->
@@ -51,7 +51,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { darkTheme, NConfigProvider, NMessageProvider, NMenu, NButton } from 'naive-ui'
+import { darkTheme, lightTheme, NConfigProvider, NMessageProvider, NMenu, NButton } from 'naive-ui'
 import ToolSkeleton from './components/common/ToolSkeleton.vue'
 
 const router = useRouter()

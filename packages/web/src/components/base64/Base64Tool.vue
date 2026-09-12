@@ -30,23 +30,24 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { NCard, NInput, NButton, NSpace } from 'naive-ui'
+import { base64Encode, base64Decode } from '@jtool/core'
 
 const inputText = ref('')
 const outputText = ref('')
 
 const encode = () => {
   try {
-    outputText.value = btoa(inputText.value)
+    outputText.value = base64Encode(inputText.value)
   } catch (e) {
-    outputText.value = '编码失败：请输入有效的文本'
+    outputText.value = e instanceof Error ? e.message : '编码失败'
   }
 }
 
 const decode = () => {
   try {
-    outputText.value = atob(inputText.value)
+    outputText.value = base64Decode(inputText.value)
   } catch (e) {
-    outputText.value = '解码失败：请输入有效的 BASE64 字符串'
+    outputText.value = e instanceof Error ? e.message : '解码失败'
   }
 }
 </script>

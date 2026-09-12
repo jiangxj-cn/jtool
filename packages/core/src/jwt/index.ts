@@ -1,6 +1,7 @@
 /**
  * JWT 解码工具
  */
+import CryptoJS from 'crypto-js'
 
 export interface JWTPayload {
   header: Record<string, any>
@@ -119,18 +120,17 @@ export function verifyJWTSignature(
     const headerPart = `${headerB64}.${payloadB64}`
     
     // 使用 CryptoJS 进行 HMAC 签名
-    const crypto = require('crypto-js')
     let hash: any
     
     switch (algorithm) {
       case 'HS256':
-        hash = crypto.HmacSHA256(headerPart, secret)
+        hash = CryptoJS.HmacSHA256(headerPart, secret)
         break
       case 'HS384':
-        hash = crypto.HmacSHA384(headerPart, secret)
+        hash = CryptoJS.HmacSHA384(headerPart, secret)
         break
       case 'HS512':
-        hash = crypto.HmacSHA512(headerPart, secret)
+        hash = CryptoJS.HmacSHA512(headerPart, secret)
         break
       default:
         return {
@@ -141,7 +141,7 @@ export function verifyJWTSignature(
     
     // Base64Url 编码
     const expectedSignature = hash
-      .toString(crypto.enc.Base64)
+      .toString(CryptoJS.enc.Base64)
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=/g, '')
@@ -173,8 +173,7 @@ export function createJWT(
   // Base64Url 编码函数
   function base64UrlEncode(obj: any): string {
     const str = JSON.stringify(obj)
-    const crypto = require('crypto-js')
-    const base64 = crypto.enc.Base64.stringify(crypto.enc.Utf8.parse(str))
+    const base64 = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(str))
     return base64
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
@@ -186,23 +185,22 @@ export function createJWT(
   const headerPart = `${headerB64}.${payloadB64}`
   
   // 生成签名
-  const crypto = require('crypto-js')
   let hash: any
   
   switch (algorithm) {
     case 'HS256':
-      hash = crypto.HmacSHA256(headerPart, secret)
+      hash = CryptoJS.HmacSHA256(headerPart, secret)
       break
     case 'HS384':
-      hash = crypto.HmacSHA384(headerPart, secret)
+      hash = CryptoJS.HmacSHA384(headerPart, secret)
       break
     case 'HS512':
-      hash = crypto.HmacSHA512(headerPart, secret)
+      hash = CryptoJS.HmacSHA512(headerPart, secret)
       break
   }
   
   const signature = hash
-    .toString(crypto.enc.Base64)
+    .toString(CryptoJS.enc.Base64)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '')
