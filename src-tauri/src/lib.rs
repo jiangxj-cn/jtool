@@ -3,9 +3,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            if cfg!(target_os = "windows") {
-                let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-            }
+            // macOS：隐藏 Dock 图标，应用仅驻留系统托盘
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             Ok(())
         })
         .on_window_event(|window, event| {
