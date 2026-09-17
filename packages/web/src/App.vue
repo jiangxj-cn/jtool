@@ -25,19 +25,25 @@
           />
 
           <div class="sidebar-footer">
-            <n-button quaternary size="small" @click="toggleTheme">
-              {{ isDark ? '☀️ 浅色' : '🌙 深色' }}
-            </n-button>
+            <n-space vertical size="small">
+              <n-button quaternary size="small" block @click="toggleTheme">
+                {{ isDark ? '☀️ 浅色' : '🌙 深色' }}
+              </n-button>
+              <LogViewer />
+            </n-space>
           </div>
         </aside>
 
         <!-- 主内容区 -->
+        <!-- 重要：不要再用 transition 的 out-in 模式包裹懒加载路由组件。
+             路由组件是动态 import 的异步组件，快速/多次切换时其 leave 阶段可能被替换，
+             Vue 内部 isLeaving 标志会卡住，导致之后所有路由都渲染不出来
+             （表现就是「切换多了就切不动了」）。这里改为最直接的方式，并套错误边界兜底。 -->
         <main class="main-content">
           <router-view v-slot="{ Component, route }">
-            <transition name="fade" mode="out-in">
-              <component :is="Component" :key="route.fullPath" v-if="Component" />
-              <ToolSkeleton v-else />
-            </transition>
+            <ErrorBoundary>
+              <component :is="Component" :key="route.path" />
+            </ErrorBoundary>
           </router-view>
         </main>
 
@@ -49,10 +55,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { darkTheme, lightTheme, NConfigProvider, NMessageProvider, NMenu, NButton } from 'naive-ui'
-import ToolSkeleton from './components/common/ToolSkeleton.vue'
+import { darkTheme, lightTheme, NConfigProvider, NMessageProvider, NMenu, NButton, NSpace } from 'naive-ui'
+import ErrorBoundary from './components/common/ErrorBoundary.vue'
+import LogViewer from './components/common/LogViewer.vue'
+import { logError } from './utils/logger'
 
 const router = useRouter()
 const route = useRoute()
@@ -87,12 +95,26 @@ const toggleTheme = () => {
   isDark.value = !isDark.value
 }
 
-const handleToolChange = (key: string) => {
-  activeTool.value = key
-  if (key === 'home') {
-    router.push('/')
-  } else {
-    router.push(`/${key}`)
+// 依据当前真实路由回写菜单选中项，避免「导航失败但菜单已高亮新项」造成的假死
+const syncActiveFromRoute = () => {
+  const p = route.path
+  if (p === '/') {
+    activeTool.value = 'home'
+    return
+  }
+  const key = p.substring(1)
+  activeTool.value = menuOptions.some(opt => opt.key === key) ? key : 'home'
+}
+
+const handleToolChange = async (key: string) => {
+  const target = key === 'home' ? '/' : `/${key}`
+  try {
+    await router.push(target)
+  } catch (e) {
+    // 例如懒加载 chunk 加载失败。记录后回滚菜单高亮，保证仍然可以继续切换
+    logError('navigation', `菜单跳转失败: ${target}`, e)
+  } finally {
+    syncActiveFromRoute()
   }
   if (window.innerWidth < 768) {
     showMenu.value = false
@@ -102,16 +124,7 @@ const handleToolChange = (key: string) => {
 // 监听路由变化，同步菜单选中状态
 watch(
   () => route.path,
-  (newPath) => {
-    if (newPath === '/') {
-      activeTool.value = 'home'
-    } else {
-      const path = newPath.substring(1)
-      if (menuOptions.some(opt => opt.key === path)) {
-        activeTool.value = path
-      }
-    }
-  },
+  () => syncActiveFromRoute(),
   { immediate: true }
 )
 </script>
@@ -203,17 +216,6 @@ body {
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 99;
-}
-
-/* 路由过渡动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 
 /* 移动端响应式 */
