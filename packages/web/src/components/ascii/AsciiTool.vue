@@ -26,11 +26,11 @@
         
         <!-- 操作按钮 -->
         <n-space>
-          <n-button type="primary" @click="stringToAscii">
+          <n-button type="primary" @click="handleStringToAscii">
             <template #icon>→</template>
             转 ASCII
           </n-button>
-          <n-button @click="asciiToString">
+          <n-button @click="handleAsciiToString">
             <template #icon>←</template>
             转字符串
           </n-button>
@@ -67,28 +67,32 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { NCard, NInput, NButton, NSpace, NRadioGroup, NRadioButton, NAlert } from 'naive-ui'
-import { stringToAscii, asciiToString, type AsciiFormat } from '../../packages/core/src/ascii'
+// ⚠️ 必须从 @jtool/core 导入（原来写成 '../../packages/core/src/ascii' 是错的相对路径，
+// 从本文件出发解析不到，会让构建直接失败）。
+// ⚠️ 导入名 stringToAscii / asciiToString 不能用作本文件里的函数名：在 <script setup> 里
+// 会被同名 const 遮蔽，使它们变成递归调用自己 → 栈溢出。故本地处理函数用 handleXxx 命名。
+import { stringToAscii, asciiToString, type AsciiFormat } from '@jtool/core'
 
 const inputText = ref('')
 const outputText = ref('')
 const asciiFormat = ref<AsciiFormat>('decimal')
 
-const stringToAscii = () => {
+const handleStringToAscii = () => {
   if (!inputText.value.trim()) {
     outputText.value = '请输入要转换的字符串'
     return
   }
-  
+
   const result = stringToAscii(inputText.value, asciiFormat.value)
   outputText.value = result.success ? result.result : `错误：${result.error}`
 }
 
-const asciiToString = () => {
+const handleAsciiToString = () => {
   if (!inputText.value.trim()) {
     outputText.value = '请输入 ASCII 码'
     return
   }
-  
+
   const result = asciiToString(inputText.value, asciiFormat.value)
   outputText.value = result.success ? result.result : `错误：${result.error}`
 }

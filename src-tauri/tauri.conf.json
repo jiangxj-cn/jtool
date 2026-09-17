@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "JTool",
-  "version": "0.1.0",
+  "version": "0.2.7",
   "identifier": "com.jtool.app",
   "build": {
     "frontendDist": "../packages/web/dist",
@@ -10,10 +10,6 @@
     "beforeBuildCommand": "pnpm build:web"
   },
   "app": {
-    "trayIcon": {
-      "iconPath": "icons/icon.ico",
-      "iconAsTemplate": true
-    },
     "windows": [
       {
         "title": "JTool - 开发者工具集",

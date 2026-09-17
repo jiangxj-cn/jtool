@@ -31,7 +31,7 @@
           <n-select
             v-model:value="fromUnit"
             :options="fromUnitOptions"
-            @update:value="convert"
+            @update:value="runConvert"
           />
         </div>
 
@@ -47,7 +47,7 @@
           <n-select
             v-model:value="toUnit"
             :options="toUnitOptions"
-            @update:value="convert"
+            @update:value="runConvert"
           />
         </div>
       </div>
@@ -88,11 +88,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { 
   NButton, NButtonGroup, NSelect, NInputNumber, 
   NTag, NDataTable, NCard 
 } from 'naive-ui'
+// ⚠️ @jtool/core 导出的名字就叫 convert。本文件内的换算函数必须另起名字（见 runConvert），
+// 否则在 <script setup> 里 const convert 会遮蔽它，使 convert() 变成调用自己 —— 无限递归。
 import {
   getCategories,
   getUnits,
@@ -102,6 +104,7 @@ import {
   type UnitCategory,
   type ConversionResult
 } from '@jtool/core'
+import { logError } from '../../utils/logger'
 
 // 状态
 const selectedCategory = ref<UnitCategory>('length')
@@ -172,7 +175,8 @@ const commonPresets = computed(() => {
   return getCommonConversions(selectedCategory.value)
 })
 
-// 选择类别
+// 选择类别（selectedCategory 只在这里被修改：模板按钮走 selectCategory，
+// 所以不再额外 watch(selectedCategory)，避免每次点击换算两遍）
 const selectCategory = (category: UnitCategory) => {
   selectedCategory.value = category
   const units = getUnits(category)
@@ -183,40 +187,58 @@ const selectCategory = (category: UnitCategory) => {
     fromUnit.value = units[0].id
     toUnit.value = units[0].id
   }
-  convert()
+  inputValue.value = 1
+  runConvert()
 }
 
 // 执行换算
-const convert = () => {
+// ⚠️ 名字不能叫 convert：会遮蔽从 @jtool/core 导入的 convert，
+// 使 convert(...) 变成递归调用自己 → 栈溢出 → 每层 catch 后 result 为 undefined。
+const runConvert = () => {
   if (!fromUnit.value || !toUnit.value) return
 
-  const validation = validateInput(inputValue.value.toString(), selectedCategory.value)
+  // n-input-number 清空时会给出 null，直接 .toString() 会抛 TypeError
+  const raw = inputValue.value
+  if (raw === null || raw === undefined || Number.isNaN(raw)) {
+    outputValue.value = 0
+    formula.value = '请输入有效的数字'
+    return
+  }
+
+  const validation = validateInput(String(raw), selectedCategory.value)
   if (!validation.valid) {
+    outputValue.value = 0
     formula.value = validation.error || ''
     return
   }
 
   try {
     const result: ConversionResult = convert(
-      inputValue.value,
+      raw,
       fromUnit.value,
       toUnit.value,
       selectedCategory.value
     )
+    if (!result) throw new Error('换算函数未返回结果')
     outputValue.value = result.outputValue
     formula.value = result.formula || ''
   } catch (error) {
-    console.error('换算错误:', error)
+    logError(
+      'unit-converter',
+      '换算失败',
+      error,
+      `${raw} ${fromUnit.value} -> ${toUnit.value} (${selectedCategory.value})`
+    )
     outputValue.value = 0
     formula.value = '换算错误'
   }
 }
 
 // 防抖换算（用于输入框）
-let debounceTimer: any
+let debounceTimer: ReturnType<typeof setTimeout> | undefined
 const debouncedConvert = () => {
   clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(convert, 200)
+  debounceTimer = setTimeout(runConvert, 200)
 }
 
 // 应用预设
@@ -224,7 +246,7 @@ const applyPreset = (preset: { from: string; to: string; value: number }) => {
   fromUnit.value = preset.from
   toUnit.value = preset.to
   inputValue.value = preset.value
-  convert()
+  runConvert()
 }
 
 // 获取单位说明
@@ -280,15 +302,9 @@ function getUnitDescription(category: UnitCategory, unitId: string): string {
   return descriptions[category]?.[unitId] || ''
 }
 
-// 监听类别变化
-watch(selectedCategory, () => {
-  const units = getUnits(selectedCategory.value)
-  if (units.length >= 2) {
-    fromUnit.value = units[0].id
-    toUnit.value = units[1].id
-  }
-  inputValue.value = 1
-  convert()
+// 卸载时清掉待触发的防抖，避免组件已销毁还执行换算（切标签页时尤为重要）
+onUnmounted(() => {
+  clearTimeout(debounceTimer)
 })
 
 // 初始化

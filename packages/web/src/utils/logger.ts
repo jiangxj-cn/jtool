@@ -28,16 +28,31 @@ export interface LogEntry {
   stack?: string
   /** 附加上下文（组件信息、路由、位置等） */
   detail?: string
+  /** 记录时的路由（hash 路由，如 #/unit-converter），不是导出时的页面 */
+  route?: string
+  /** 被折叠的重复次数。>=2 表示本条代表了 N 次相同的报错 */
+  repeat?: number
+  /** 最后一次重复发生的时间戳 */
+  lastT?: number
 }
 
 const STORAGE_KEY = 'jtool:logs'
 const MAX_ENTRIES = 500
 const MAX_BYTES = 512 * 1024
+/** 同一 level+source+message 在该时间窗内重复出现时折叠计数，而不是逐条刷屏 */
+const COLLAPSE_WINDOW_MS = 1500
+/** 落盘节流：失控循环里不能每条日志都全量序列化整个缓冲 */
+const PERSIST_THROTTLE_MS = 300
 
 let entries: LogEntry[] = []
 let loaded = false
 let installed = false
 let inConsoleHook = false
+let persistTimer: ReturnType<typeof setTimeout> | null = null
+let lastPersistAt = 0
+/** 近期出现过的 (level+source+message) -> 日志条目，用于折叠重复报错 */
+const recent: Map<string, LogEntry> = new Map()
+const RECENT_LIMIT = 64
 
 /* ------------------------------ 基础工具 ------------------------------ */
 
@@ -77,11 +92,12 @@ function load(): void {
 }
 
 function persist(): void {
+  lastPersistAt = Date.now()
   try {
     let list = entries
     if (list.length > MAX_ENTRIES) list = list.slice(-MAX_ENTRIES)
     let json = JSON.stringify(list)
-    // 体积兜底：超限就砍掉最旧的四分之一，直到达标
+    // 体积兜底：超限就砍掉最旧的，直到达标
     while (json.length > MAX_BYTES && list.length > 1) {
       list = list.slice(Math.ceil(list.length / 4))
       json = JSON.stringify(list)
@@ -99,6 +115,39 @@ function persist(): void {
   }
 }
 
+/** 节流落盘：避免「每次 addLog 都全量 JSON.stringify」在错误风暴里把 UI 卡死 */
+function schedulePersist(): void {
+  const wait = PERSIST_THROTTLE_MS - (Date.now() - lastPersistAt)
+  if (wait <= 0) {
+    persist()
+    return
+  }
+  if (persistTimer !== null) return
+  persistTimer = setTimeout(() => {
+    persistTimer = null
+    persist()
+  }, wait)
+}
+
+/** 立即落盘（页面隐藏 / 退出前调用，保证最后几条不丢） */
+function flushPersist(): void {
+  if (persistTimer !== null) {
+    clearTimeout(persistTimer)
+    persistTimer = null
+  }
+  persist()
+}
+
+/** 当前路由（hash 路由的 #/xxx），用于判断错误出在哪个页面 */
+function currentRoute(): string | undefined {
+  try {
+    if (typeof location === 'undefined') return undefined
+    return location.hash || undefined
+  } catch {
+    return undefined
+  }
+}
+
 /* ------------------------------ 写入 API ------------------------------ */
 
 export function addLog(
@@ -109,9 +158,38 @@ export function addLog(
   detail?: string
 ): void {
   load()
-  const entry: LogEntry = { t: Date.now(), level, source, message: message ?? '', stack, detail }
+  const now = Date.now()
+  const msg = message ?? ''
+
+  // 失控循环折叠：同一条报错在窗口内重复出现时只累加计数，
+  // 否则 500 条环形缓冲会被瞬间刷满、把真正的根因（第一条）挤掉。
+  // 用 Map 而不是「只看上一条」，这样 A/B 交替刷屏也能折叠住。
+  const key = `${level}\u0000${source}\u0000${msg}`
+  const hit = recent.get(key)
+  if (hit && now - (hit.lastT ?? hit.t) <= COLLAPSE_WINDOW_MS) {
+    hit.repeat = (hit.repeat ?? 1) + 1
+    hit.lastT = now
+    schedulePersist()
+    return
+  }
+
+  const entry: LogEntry = {
+    t: now,
+    level,
+    source,
+    message: msg,
+    stack,
+    detail,
+    route: currentRoute(),
+  }
   entries.push(entry)
-  persist()
+  recent.delete(key)
+  recent.set(key, entry)
+  if (recent.size > RECENT_LIMIT) {
+    const oldest = recent.keys().next().value
+    if (oldest !== undefined) recent.delete(oldest)
+  }
+  schedulePersist()
   mirrorToConsole(entry)
 }
 
@@ -150,6 +228,12 @@ export function getLogs(): LogEntry[] {
 
 export function clearLogs(): void {
   entries = []
+  recent.clear()
+  if (persistTimer !== null) {
+    clearTimeout(persistTimer)
+    persistTimer = null
+  }
+  lastPersistAt = 0
   try {
     localStorage.removeItem(STORAGE_KEY)
   } catch {
@@ -167,7 +251,12 @@ export function countErrors(): number {
 
 function formatEntry(e: LogEntry): string {
   const ts = new Date(e.t).toISOString()
-  let s = `[${ts}] [${e.level.toUpperCase()}] [${e.source}] ${e.message}`
+  const route = e.route ? ` @${e.route}` : ''
+  const repeat = e.repeat && e.repeat > 1 ? `  ×${e.repeat}` : ''
+  let s = `[${ts}] [${e.level.toUpperCase()}] [${e.source}${route}] ${e.message}${repeat}`
+  if (e.repeat && e.repeat > 1 && e.lastT) {
+    s += `\n    ↳ 相同报错重复 ${e.repeat} 次，最后一次 ${new Date(e.lastT).toISOString()}`
+  }
   if (e.detail) s += `\n    ↳ ${e.detail}`
   if (e.stack) {
     const lines = e.stack.split('\n').slice(0, 12)
@@ -181,7 +270,8 @@ export function exportLogsText(): string {
   const header = [
     `# JTool 运行日志`,
     `# 导出时间: ${new Date().toISOString()}`,
-    `# 页面: ${typeof location !== 'undefined' ? location.href : ''}`,
+    `# 导出时页面: ${typeof location !== 'undefined' ? location.href : ''}`,
+    `# 出错页面: 见每条日志的 @#/xxx（下方「导出时页面」只是点导出时的位置，不代表出错位置）`,
     `# UA: ${typeof navigator !== 'undefined' ? navigator.userAgent : ''}`,
     `# 共 ${entries.length} 条`,
     '',
@@ -307,7 +397,14 @@ export function installGlobalErrorHandlers(app?: App, router?: Router): void {
 
   installConsoleHook()
 
-  // 5) 控制台逃生通道
+  // 5) 退出/切后台前同步落盘，避免节流窗口内的日志丢失
+  window.addEventListener('pagehide', flushPersist)
+  window.addEventListener('beforeunload', flushPersist)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPersist()
+  })
+
+  // 6) 控制台逃生通道
   const w = window as unknown as Record<string, unknown>
   w.__jtoolLogs = getLogs
   w.__jtoolExportLogs = exportLogsText

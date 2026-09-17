@@ -20,9 +20,15 @@
             共 {{ logs.length }} 条（错误 {{ errorCount }} 条）· 日志已持久化，重启后仍在 ·
             控制台可用 __jtoolExportLogs()
           </n-text>
+          <n-space v-if="summary.length" vertical size="small" class="summary">
+            <n-text depth="3" style="font-size: 12px">按来源+消息去重后的 Top 报错：</n-text>
+            <n-text v-for="s in summary" :key="s.key" style="font-size: 12px" code>
+              ×{{ s.count }} — {{ s.key }}
+            </n-text>
+          </n-space>
           <n-input
             type="textarea"
-            :rows="28"
+            :rows="24"
             readonly
             :value="text || '暂无日志'"
             style="font-family: Consolas, Monaco, monospace; font-size: 12px"
@@ -34,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { NButton, NDrawer, NDrawerContent, NSpace, NText, NInput, useMessage } from 'naive-ui'
 import {
   getLogs,
@@ -52,14 +58,32 @@ const open = ref(false)
 const logs = ref<LogEntry[]>([])
 const errorCount = ref(0)
 const confirmingClear = ref(false)
+// 注意：不能写成 computed(() => exportLogsText()) —— 它没有任何响应式依赖，
+// 只会求值一次并永久缓存，抽屉会一直显示打开时的旧快照。
+const text = ref('')
+const summary = ref<{ key: string; count: number }[]>([])
 let timer: number | undefined
 let clearTimer: number | undefined
 
-const text = computed(() => exportLogsText())
+/** 按「来源 + 消息」聚合，直接把刷屏的重复报错压成一行计数 */
+const buildSummary = (list: LogEntry[]) => {
+  const map = new Map<string, { key: string; count: number }>()
+  for (const e of list) {
+    if (e.level === 'info') continue
+    const key = `${e.source} | ${e.message}`
+    const n = e.repeat ?? 1
+    const hit = map.get(key)
+    if (hit) hit.count += n
+    else map.set(key, { key, count: n })
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 5)
+}
 
 const refresh = () => {
   logs.value = getLogs()
   errorCount.value = countErrors()
+  text.value = exportLogsText()
+  summary.value = buildSummary(logs.value)
 }
 
 const onCopy = async () => {
